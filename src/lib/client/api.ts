@@ -11,6 +11,7 @@ import type {
 } from "@/lib/api/schemas";
 import type { DaySummaryDTO, DiaryDayDTO } from "@/lib/diary/types";
 import type { FoodDetail, FoodSearchResult } from "@/lib/foods/types";
+import type { RangeSummaryDTO, SourcesDTO } from "@/lib/insights/types";
 import type {
   PreferencesDTO,
   ProfileDTO,
@@ -93,4 +94,10 @@ export const api = {
       method: "PUT",
       body: JSON.stringify(input),
     }),
+  range: (from: string, to: string) =>
+    request<RangeSummaryDTO>(`/api/summary/range?from=${from}&to=${to}`),
+  sources: (nutrientId: number, from: string, to: string) =>
+    request<SourcesDTO>(
+      `/api/insights/sources?nutrient=${nutrientId}&from=${from}&to=${to}`,
+    ),
 };

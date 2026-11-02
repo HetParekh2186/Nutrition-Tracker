@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { N } from "./catalog";
 import type { NutrientMap } from "./math";
-import { datesBetween, summarizeRange, topSources } from "./range";
+import { datesBetween, daysMeeting, summarizeRange, topSources } from "./range";
 
 describe("datesBetween", () => {
   it("is inclusive and crosses months", () => {
@@ -81,5 +81,26 @@ describe("topSources", () => {
       "f10",
       "f9",
     ]);
+  });
+});
+
+describe("daysMeeting", () => {
+  it("counts logged days at or above target", () => {
+    const m = (proteinG: number) => ({
+      kcal: 0,
+      proteinG,
+      carbsG: 0,
+      fatG: 0,
+      fiberG: 0,
+    });
+    const days = [
+      { date: "a", entryCount: 3, macros: m(140) },
+      { date: "b", entryCount: 2, macros: m(120) },
+      { date: "c", entryCount: 0, macros: m(0) },
+      { date: "d", entryCount: 4, macros: m(135) },
+    ];
+    expect(daysMeeting(days, "proteinG", 135)).toBe(2);
+    expect(daysMeeting(days, "proteinG", 135, 0.85)).toBe(3);
+    expect(daysMeeting(days, "proteinG", 0)).toBe(0);
   });
 });

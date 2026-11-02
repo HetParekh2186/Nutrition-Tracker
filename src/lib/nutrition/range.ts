@@ -106,3 +106,16 @@ export function topSources(
     .sort((a, b) => b.amount - a.amount)
     .slice(0, limit);
 }
+
+/** Logged days where a macro reached at least the given fraction of target. */
+export function daysMeeting(
+  days: DayTotal[],
+  key: keyof Macros,
+  target: number,
+  atLeast = 1,
+): number {
+  if (target <= 0) return 0;
+  return days.filter(
+    (d) => d.entryCount > 0 && d.macros[key] >= target * atLeast,
+  ).length;
+}
