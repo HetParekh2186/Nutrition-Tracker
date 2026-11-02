@@ -153,3 +153,19 @@ export const TargetsUpdateSchema = z.object({
     .max(100),
 });
 export type TargetsUpdateInput = z.input<typeof TargetsUpdateSchema>;
+
+// ---------- Insights (Phase 2) ----------
+
+export const RangeQuery = z
+  .object({ from: IsoDate, to: IsoDate })
+  .refine((v) => v.from <= v.to, "from must be on or before to")
+  .refine(
+    (v) => Date.parse(v.to) - Date.parse(v.from) <= 365 * 86_400_000,
+    "Ranges are limited to one year",
+  );
+
+export const SourcesQuery = z.object({
+  nutrient: z.coerce.number().int().positive(),
+  from: IsoDate,
+  to: IsoDate,
+});
