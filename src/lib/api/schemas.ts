@@ -241,3 +241,19 @@ export const AdaptRequest = z.object({
   instructions: z.string().trim().min(3).max(500),
   servings: z.number().int().min(1).max(12).optional(),
 });
+
+// ---------- Recommendations (Phase 4) ----------
+
+export const RecommendationQuery = z.object({
+  slot: MealSlotSchema.default("dinner"),
+  limit: z.coerce.number().int().min(1).max(30).default(10),
+});
+
+export const InteractionRequest = z.discriminatedUnion("event", [
+  z.object({ event: z.enum(["view", "save", "unsave", "skip"]) }),
+  z.object({
+    event: z.literal("rate"),
+    rating: z.number().int().min(1).max(5),
+  }),
+]);
+export type InteractionRequestInput = z.input<typeof InteractionRequest>;
