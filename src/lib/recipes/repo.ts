@@ -263,6 +263,25 @@ export async function rebuildNutrition(
   return perServing.amounts;
 }
 
+/**
+ * Text to infer diet tags from: what the cook reads plus the matched USDA
+ * names, which name the animal even when the display text does not
+ * ("sliced sirloin" is "Beef, top sirloin, ...").
+ */
+async function dietText(db: Db | Tx, input: RecipeInput): Promise<string[]> {
+  const ids = input.ingredients.flatMap((i) => (i.foodId ? [i.foodId] : []));
+  const names = ids.length
+    ? await db
+        .select({ name: foods.name })
+        .from(foods)
+        .where(inArray(foods.id, ids))
+    : [];
+  return [
+    ...input.ingredients.map((i) => i.displayText),
+    ...names.map((n) => n.name),
+  ];
+}
+
 async function writeChildren(tx: Tx, recipeId: string, input: RecipeInput) {
   await tx.delete(recipeSteps).where(eq(recipeSteps.recipeId, recipeId));
   await tx
@@ -320,10 +339,7 @@ export async function createRecipe(
         description: input.description ?? null,
         cuisine: input.cuisine ?? null,
         mealTypes: input.mealTypes,
-        tags: withDietTags(
-          input.tags,
-          input.ingredients.map((i) => i.displayText),
-        ),
+        tags: withDietTags(input.tags, await dietText(tx, input)),
         servings: input.servings,
         prepMinutes: input.prepMinutes ?? null,
         cookMinutes: input.cookMinutes ?? null,
@@ -349,10 +365,7 @@ export async function updateRecipe(
         description: input.description ?? null,
         cuisine: input.cuisine ?? null,
         mealTypes: input.mealTypes,
-        tags: withDietTags(
-          input.tags,
-          input.ingredients.map((i) => i.displayText),
-        ),
+        tags: withDietTags(input.tags, await dietText(tx, input)),
         servings: input.servings,
         prepMinutes: input.prepMinutes ?? null,
         cookMinutes: input.cookMinutes ?? null,

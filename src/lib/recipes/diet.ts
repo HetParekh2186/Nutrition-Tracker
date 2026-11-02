@@ -6,7 +6,7 @@
 // implies: vegetarian allows dairy but not eggs; eggetarian allows both.
 
 const MEAT =
-  /\b(chicken|beef|pork|turkey|lamb|mutton|goat|veal|duck|bacon|ham|sausages?|prosciutto|pepperoni|salami|chorizo|steak|mince|meatballs?|broth, (chicken|beef)|(chicken|beef) (broth|stock))\b/i;
+  /\b(chicken|beef|pork|turkey|lamb|mutton|goat|veal|duck|bacon|ham|sausages?|prosciutto|pepperoni|salami|chorizo|steak|sirloin|brisket|ribeye|tenderloin|pancetta|lard|mince|meatballs?|broth, (chicken|beef)|(chicken|beef) (broth|stock))\b/i;
 const FISH =
   /\b(fish|salmon|tuna|cod|tilapia|trout|halibut|mackerel|sardines?|anchov(y|ies)|shrimps?|prawns?|crab|lobster|scallops?|clams?|mussels?|oysters?|squid|seafood)\b/i;
 const DAIRY =

@@ -70,3 +70,10 @@ describe("suitsDiet", () => {
     ).toBe(true);
   });
 });
+
+describe("meat cuts without the animal's name", () => {
+  it("tags sirloin and brisket as meat", () => {
+    expect(dietTagsFor(["450 g thinly sliced sirloin"])).toEqual([]);
+    expect(dietTagsFor(["1 kg brisket"])).toEqual([]);
+  });
+});
