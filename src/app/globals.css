@@ -1,0 +1,180 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design tokens from SPEC.md "Colour tokens". These are the only colours in
+ * the app. Tailwind's default palette is removed below so a stray
+ * `bg-red-500` fails to style anything instead of shipping.
+ */
+:root {
+  --bg: #f7f4ee;
+  --surface: #ffffff;
+  --surface-2: #efebe3;
+  --ink: #1a1814;
+  --ink-muted: #6b655b;
+  --border: #e2dcd0;
+  --accent: #e4572e;
+  --protein: #b5446e;
+  --carbs: #d89b1d;
+  --fat: #6e8b3d;
+  --fiber: #3e8e7e;
+  --good: #3e8e5a;
+  --warn: #c98500;
+  --over: #c2412d;
+
+  /* Derived: text on paprika (ink passes WCAG AA, white does not) */
+  --on-accent: #1a1814;
+  /* Derived: modal backdrop */
+  --scrim: rgb(26 24 20 / 0.32);
+
+  --radius: 10px; /* controls; cards use rounded-xl = 14px */
+}
+
+.dark {
+  --bg: #12110f;
+  --surface: #1b1a17;
+  --surface-2: #24221e;
+  --ink: #f2eee6;
+  --ink-muted: #a39c90;
+  --border: #2e2b26;
+  --accent: #ff6b3d;
+  --protein: #d9628e;
+  --carbs: #f0b43a;
+  --fat: #93b058;
+  --fiber: #5db3a1;
+  --good: #5db57a;
+  --warn: #e8a21e;
+  --over: #e4614b;
+
+  --on-accent: #12110f;
+  --scrim: rgb(0 0 0 / 0.56);
+}
+
+/*
+ * shadcn/ui variable names, pointed at our tokens. Note the name clash:
+ * shadcn's `accent` is a subtle hover fill, ours is paprika. Components must
+ * use `bg-muted` for hover fills; `accent` always means paprika here.
+ */
+:root,
+.dark {
+  --background: var(--bg);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--accent);
+  --primary-foreground: var(--on-accent);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--ink);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--ink-muted);
+  --accent-foreground: var(--on-accent);
+  --destructive: var(--over);
+  --input: var(--border);
+  --ring: var(--accent);
+}
+
+@theme inline {
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-protein: var(--protein);
+  --color-carbs: var(--carbs);
+  --color-fat: var(--fat);
+  --color-fiber: var(--fiber);
+  --color-good: var(--good);
+  --color-warn: var(--warn);
+  --color-over: var(--over);
+  --color-scrim: var(--scrim);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Fonts are set as CSS variables by next/font in layout.tsx */
+  --font-*: initial;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+  --font-heading: var(--font-display);
+
+  /* Type scale (px): 12, 14, 16, 20, 28, 40, 64 */
+  --text-*: initial;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.75rem;
+  --text-xl--line-height: 2.125rem;
+  --text-2xl: 2.5rem;
+  --text-2xl--line-height: 2.875rem;
+  --text-3xl: 4rem;
+  --text-3xl--line-height: 4.25rem;
+
+  /* 1px borders instead of shadows; one soft shadow for floating layers */
+  --shadow-*: initial;
+  --shadow-float:
+    0 12px 32px -8px rgb(26 24 20 / 0.18), 0 2px 6px rgb(26 24 20 / 0.06);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* All nutrient values, timers and targets */
+@utility num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-bg text-ink antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+    font-optical-sizing: auto;
+  }
+}
