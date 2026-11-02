@@ -3,9 +3,20 @@
 
 import type { NutrientUnit } from "./catalog";
 
-/** Decimal places to show for an amount in a unit. */
+/**
+ * Decimal places to show for an amount in a unit. SPEC.md shows mg and µg
+ * as whole numbers; below 1 they get one decimal, so 0.4 mg of copper does
+ * not read as none at all.
+ */
 export function decimalsFor(amount: number, unit: NutrientUnit): number {
   if (unit === "g") return Math.abs(amount) < 10 ? 1 : 0;
+  if (
+    (unit === "mg" || unit === "µg") &&
+    amount !== 0 &&
+    Math.abs(amount) < 1
+  ) {
+    return 1;
+  }
   return 0;
 }
 
