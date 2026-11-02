@@ -263,12 +263,19 @@ function MacroFigure({
   tone: string;
 }) {
   return (
-    <div className="border-l-4 pl-3" style={{ borderColor: tone }}>
+    <div>
       <p className="num text-2xl">
         {value}
         <span className="text-lg text-ink-muted">g</span>
       </p>
-      <p className="text-sm text-ink-muted">{label} left</p>
+      <p className="flex items-center gap-1.5 text-sm text-ink-muted">
+        <span
+          aria-hidden
+          className="size-2 rounded-full"
+          style={{ backgroundColor: tone }}
+        />
+        {label} left
+      </p>
     </div>
   );
 }
