@@ -1,0 +1,82 @@
+// Zod schemas for API inputs. Shared by route handlers and client forms.
+
+import { z } from "zod";
+
+import { MEAL_SLOTS } from "@/lib/db/schema";
+import { isIsoDate } from "@/lib/nutrition/dates";
+
+export const IsoDate = z.string().refine(isIsoDate, "Use YYYY-MM-DD");
+export const MealSlotSchema = z.enum(MEAL_SLOTS);
+
+const Grams = z.number().positive().max(10_000);
+const Servings = z.number().positive().max(100);
+
+export const FoodSearchQuery = z.object({
+  q: z.string().max(100).default(""),
+  limit: z.coerce.number().int().min(1).max(50).default(12),
+});
+
+export const DiaryQuery = z.object({ date: IsoDate.optional() });
+
+export const NewDiaryEntry = z.object({
+  date: IsoDate,
+  mealSlot: MealSlotSchema,
+  loggedVia: z
+    .enum(["search", "natural_language", "recent", "recipe"])
+    .default("search"),
+  item: z.discriminatedUnion("kind", [
+    z.object({
+      kind: z.literal("food"),
+      foodId: z.number().int().positive(),
+      quantityG: Grams,
+      portionLabel: z.string().max(120).nullish(),
+    }),
+    z.object({
+      kind: z.literal("recipe"),
+      recipeId: z.uuid(),
+      servings: Servings,
+    }),
+  ]),
+});
+export type NewDiaryEntryInput = z.input<typeof NewDiaryEntry>;
+
+export const DiaryPatch = z
+  .object({
+    date: IsoDate.optional(),
+    mealSlot: MealSlotSchema.optional(),
+    quantityG: Grams.optional(),
+    portionLabel: z.string().max(120).nullish(),
+    servings: Servings.optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, "Nothing to update");
+export type DiaryPatchInput = z.input<typeof DiaryPatch>;
+
+export const CopyRequest = z
+  .object({
+    from: IsoDate,
+    to: IsoDate,
+    slot: MealSlotSchema.optional(),
+    toSlot: MealSlotSchema.optional(),
+  })
+  .refine(
+    (v) => v.from !== v.to || (v.slot && v.toSlot && v.slot !== v.toSlot),
+    { message: "Pick a different day or slot to copy into" },
+  );
+export type CopyRequestInput = z.input<typeof CopyRequest>;
+
+const Amount = z.number().min(0).max(100_000);
+
+export const CustomFoodRequest = z.object({
+  name: z.string().trim().min(1).max(120),
+  brand: z.string().trim().max(80).optional(),
+  servingLabel: z.string().trim().min(1).max(60),
+  servingGrams: Grams,
+  kcal: Amount,
+  proteinG: Amount,
+  carbsG: Amount,
+  fatG: Amount,
+  fiberG: Amount.optional(),
+  sugarsG: Amount.optional(),
+  sodiumMg: Amount.optional(),
+});
+export type CustomFoodRequestInput = z.input<typeof CustomFoodRequest>;
