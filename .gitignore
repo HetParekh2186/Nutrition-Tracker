@@ -44,3 +44,6 @@ next-env.d.ts
 # playwright
 /test-results/
 /playwright-report/
+
+# USDA FoodData Central downloads (re-fetched by pnpm import:usda)
+/data/fdc/
