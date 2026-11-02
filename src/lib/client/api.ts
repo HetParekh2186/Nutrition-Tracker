@@ -5,13 +5,18 @@ import type {
   CustomFoodRequestInput,
   DiaryPatchInput,
   NewDiaryEntryInput,
+  AdaptRequest,
+  GenerateRequestInput,
   PreferencesUpdateInput,
   ProfileUpdateInput,
+  RecipeInputDraft,
   TargetsUpdateInput,
 } from "@/lib/api/schemas";
 import type { DaySummaryDTO, DiaryDayDTO } from "@/lib/diary/types";
 import type { FoodDetail, FoodSearchResult } from "@/lib/foods/types";
 import type { RangeSummaryDTO, SourcesDTO } from "@/lib/insights/types";
+import type { RecipeDetailDTO, RecipeSummaryDTO } from "@/lib/recipes/types";
+import type { z } from "zod";
 import type {
   PreferencesDTO,
   ProfileDTO,
@@ -100,4 +105,48 @@ export const api = {
     request<SourcesDTO>(
       `/api/insights/sources?nutrient=${nutrientId}&from=${from}&to=${to}`,
     ),
+  recipes: (params: { query?: string; slot?: string } = {}) => {
+    const qs = new URLSearchParams(
+      Object.entries(params).filter(([, v]) => v) as [string, string][],
+    );
+    return request<RecipeSummaryDTO[]>(`/api/recipes?${qs.toString()}`);
+  },
+  recipe: (id: string, servings?: number) =>
+    request<RecipeDetailDTO>(
+      `/api/recipes/${id}${servings ? `?servings=${servings}` : ""}`,
+    ),
+  createRecipe: (input: RecipeInputDraft) =>
+    request<{ id: string }>("/api/recipes", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  updateRecipe: (id: string, input: RecipeInputDraft) =>
+    request<{ id: string }>(`/api/recipes/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }),
+  deleteRecipe: (id: string) =>
+    request<void>(`/api/recipes/${id}`, { method: "DELETE" }),
+  /** Streaming endpoints return the raw Response for readNdjson. */
+  generateRecipe: (input: GenerateRequestInput) =>
+    streamRequest("/api/recipes/generate", input),
+  adaptRecipe: (id: string, input: z.input<typeof AdaptRequest>) =>
+    streamRequest(`/api/recipes/${id}/adapt`, input),
 };
+
+async function streamRequest(path: string, body: unknown): Promise<Response> {
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const data: unknown = await res.json().catch(() => null);
+    const message =
+      data && typeof data === "object" && "error" in data
+        ? String(data.error)
+        : `Request failed (${res.status})`;
+    throw new ApiError(res.status, message);
+  }
+  return res;
+}

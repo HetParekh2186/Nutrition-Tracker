@@ -14,6 +14,8 @@ export type FoodHit = {
   /** Present for foods the user has logged before. */
   lastUsed: { quantityG: number; portionLabel: string | null } | null;
   uses: number;
+  /** Text-match signals, present on search results. */
+  match?: { similarity: number; fullText: boolean };
 };
 
 export type FoodPortion = { id: number; label: string; grams: number };

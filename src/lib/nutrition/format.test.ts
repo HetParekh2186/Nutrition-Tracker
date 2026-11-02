@@ -40,3 +40,12 @@ describe("display rounding (rule 7)", () => {
     expect(formatRemaining(-120, "kcal")).toBe("over by 120 kcal");
   });
 });
+
+describe("trace amounts", () => {
+  it("shows one decimal for mg and µg below 1", () => {
+    expect(formatAmount(0.42, "mg")).toBe("0.4");
+    expect(formatAmount(0.06, "µg")).toBe("0.1");
+    expect(formatAmount(0, "mg")).toBe("0");
+    expect(formatAmount(1.4, "mg")).toBe("1");
+  });
+});

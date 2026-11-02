@@ -102,3 +102,27 @@ test("insights, settings and onboarding", async ({ page }, info) => {
     fullPage: true,
   });
 });
+
+test("recipes library and detail", async ({ page }, info) => {
+  await signInAsDemo(page);
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.goto("/recipes");
+    await expect(
+      page.getByRole("heading", { name: "Starter library" }),
+    ).toBeVisible();
+    await page.screenshot({
+      path: `${DIR}/recipes-${info.project.name}-${scheme}.png`,
+      fullPage: true,
+    });
+  }
+  await page.emulateMedia({ colorScheme: "light" });
+  await page
+    .getByRole("link", { name: "Open Salmon teriyaki rice bowl" })
+    .click();
+  await expect(page.getByRole("heading", { name: "Method" })).toBeVisible();
+  await page.screenshot({
+    path: `${DIR}/recipe-${info.project.name}.png`,
+    fullPage: true,
+  });
+});

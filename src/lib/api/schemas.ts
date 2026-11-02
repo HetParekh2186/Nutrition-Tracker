@@ -169,3 +169,75 @@ export const SourcesQuery = z.object({
   from: IsoDate,
   to: IsoDate,
 });
+
+// ---------- Recipes (Phase 3) ----------
+
+export const RecipeInputSchema = z.object({
+  title: z.string().trim().min(1).max(120),
+  description: z.string().trim().max(600).nullish(),
+  cuisine: z.string().trim().toLowerCase().max(40).nullish(),
+  mealTypes: z.array(MealSlotSchema).max(4).default([]),
+  tags: z
+    .array(z.string().trim().toLowerCase().min(1).max(30))
+    .max(12)
+    .default([]),
+  servings: z.number().positive().max(50),
+  prepMinutes: z.number().int().min(0).max(1440).nullish(),
+  cookMinutes: z.number().int().min(0).max(1440).nullish(),
+  ingredients: z
+    .array(
+      z.object({
+        displayText: z.string().trim().min(1).max(160),
+        foodId: z.number().int().positive().nullable(),
+        quantityG: z.number().min(0).max(20_000),
+        isOptional: z.boolean().default(false),
+        groupLabel: z.string().trim().max(60).nullish(),
+      }),
+    )
+    .min(1)
+    .max(60),
+  steps: z
+    .array(
+      z.object({
+        instruction: z.string().trim().min(1).max(1000),
+        timerSeconds: z.number().int().min(1).max(86_400).nullish(),
+        ingredientIndexes: z.array(z.number().int().min(0)).default([]),
+      }),
+    )
+    .max(40)
+    .default([]),
+});
+export type RecipeInput = z.output<typeof RecipeInputSchema>;
+export type RecipeInputDraft = z.input<typeof RecipeInputSchema>;
+
+export const RecipeQuery = z.object({
+  query: z.string().max(100).optional(),
+  tags: z.string().max(200).optional(),
+  slot: MealSlotSchema.optional(),
+});
+
+export const RecipeViewQuery = z.object({
+  servings: z.coerce.number().positive().max(50).optional(),
+});
+
+export const GenerateRequest = z.object({
+  request: z.string().trim().min(3).max(500),
+  slot: MealSlotSchema.optional(),
+  servings: z.number().int().min(1).max(12).default(2),
+  /** Per-serving targets; defaults to the slot's remaining budget. */
+  target: z
+    .object({
+      kcal: z.number().positive().max(3000),
+      proteinG: z.number().min(0).max(300),
+      carbsG: z.number().min(0).max(500),
+      fatG: z.number().min(0).max(200),
+    })
+    .partial()
+    .optional(),
+});
+export type GenerateRequestInput = z.input<typeof GenerateRequest>;
+
+export const AdaptRequest = z.object({
+  instructions: z.string().trim().min(3).max(500),
+  servings: z.number().int().min(1).max(12).optional(),
+});

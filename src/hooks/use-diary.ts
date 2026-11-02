@@ -89,6 +89,11 @@ export type AddEntryVars = {
   input: NewDiaryEntryInput;
   /** Shown immediately while the server saves. */
   preview: { name: string; brand: string | null; macros: Macros };
+  /**
+   * Success toast with an Undo action. Lives on the mutation, not the call,
+   * so it still shows after the dialog that logged it has closed.
+   */
+  notify?: { title: string; description?: string };
 };
 
 export function useAddEntry() {
@@ -131,6 +136,21 @@ export function useAddEntry() {
       );
       shiftSummary(qc, date, preview.macros);
       return snap;
+    },
+    onSuccess: ({ id }, { input, notify }) => {
+      if (!notify) return;
+      toast.success(notify.title, {
+        ...(notify.description ? { description: notify.description } : {}),
+        action: {
+          label: "Undo",
+          onClick: () => {
+            void api
+              .deleteEntry(id)
+              .then(() => invalidateDay(qc, input.date))
+              .catch((err: Error) => toast.error(err.message));
+          },
+        },
+      });
     },
     onError: (err, { input }, snap) => {
       restore(qc, input.date, snap);
