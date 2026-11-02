@@ -7,6 +7,7 @@ import { MacroTrend } from "@/components/insights/macro-trend";
 import { MicroGrid } from "@/components/insights/micro-grid";
 import { SourcesPanel } from "@/components/insights/sources-panel";
 import { MACRO_META } from "@/components/nutrition/macro-chip";
+import type { SuggestionStats } from "@/lib/insights/repo";
 import type { RangeSummaryDTO } from "@/lib/insights/types";
 import { formatAmount } from "@/lib/nutrition/format";
 import type { Macros } from "@/lib/nutrition/macros";
@@ -63,10 +64,12 @@ export function InsightsView({
   range,
   summary,
   week,
+  suggestions,
 }: {
   range: 7 | 30 | 90;
   summary: RangeSummaryDTO;
   week: RangeSummaryDTO;
+  suggestions: SuggestionStats;
 }) {
   const [selected, setSelected] = useState<number | null>(null);
   const { averageMacros: avg, targetMacros: target } = summary;
@@ -105,7 +108,7 @@ export function InsightsView({
         </nav>
       </header>
 
-      <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <Stat
           label="Average calories"
           value={formatAmount(avg.kcal, "kcal")}
@@ -125,6 +128,15 @@ export function InsightsView({
           label="Days logged"
           value={`${summary.loggedDays} / ${summary.days.length}`}
           detail={`${nearKcal} within 10% of your calorie target`}
+        />
+        <Stat
+          label="Suggestions acted on"
+          value={
+            suggestions.rate === null
+              ? "None yet"
+              : `${Math.round(suggestions.rate * 100)}%`
+          }
+          detail={`of ${suggestions.shown} top-5 suggestions saved or cooked, last 4 weeks`}
         />
       </dl>
 

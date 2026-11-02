@@ -126,3 +126,16 @@ test("recipes library and detail", async ({ page }, info) => {
     fullPage: true,
   });
 });
+
+test("for you and meal picks", async ({ page }, info) => {
+  await signInAsDemo(page);
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.goto("/for-you?slot=dinner");
+    await expect(page.getByRole("heading", { name: "For You" })).toBeVisible();
+    await page.screenshot({
+      path: `${DIR}/for-you-${info.project.name}-${scheme}.png`,
+      fullPage: true,
+    });
+  }
+});

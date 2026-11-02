@@ -23,6 +23,12 @@ test("onboarding computes targets", async ({ page }) => {
   await page.getByRole("button", { name: "Continue" }).click();
 
   await page.getByRole("radio", { name: /Everything/ }).check();
+  await page.getByRole("button", { name: "Continue" }).click();
+
+  // Cold start: pick two meals.
+  await page.getByText("Pick", { exact: true }).first().click();
+  await page.getByText("Pick", { exact: true }).first().click();
+  await expect(page.getByText("2 of 5 picked")).toBeVisible();
   await page.getByRole("button", { name: "Finish and see today" }).click();
 
   await expect(page).toHaveURL(/\/today/);

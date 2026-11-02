@@ -206,6 +206,26 @@ async function main() {
           });
         }
       }
+      // For You impressions: the evening before each cook, the cooked dish
+      // and four others were in the top 5.
+      const others = starter.map((r) => r.id);
+      for (const [title, daysAgo] of COOKS) {
+        const id = recipeId.get(title);
+        if (!id) continue;
+        const shownAt = chicagoInstant(addDays(today, -(daysAgo + 1)), 18, 30);
+        const fillers = others
+          .filter((o) => o !== id)
+          .sort(() => rand() - 0.5)
+          .slice(0, 4);
+        for (const shown of [id, ...fillers]) {
+          interactions.push({
+            user_id: userId,
+            recipe_id: shown,
+            event: "impression",
+            created_at: shownAt,
+          });
+        }
+      }
       for (const [title, rating] of RATINGS) {
         const id = recipeId.get(title);
         if (id) {
