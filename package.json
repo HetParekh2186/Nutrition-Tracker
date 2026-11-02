@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "check:em-dash": "node scripts/check-em-dash.mjs README.md"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
