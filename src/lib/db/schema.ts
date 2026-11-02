@@ -300,7 +300,7 @@ export const foodNutrients = pgTable(
     nutrientId: integer()
       .notNull()
       .references(() => nutrients.id),
-    amountPer100g: num().notNull(),
+    amountPer100g: numeric("amount_per_100g", { mode: "number" }).notNull(),
   },
   (t) => [
     primaryKey({ columns: [t.foodId, t.nutrientId] }),

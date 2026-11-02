@@ -69,7 +69,7 @@ ALTER TABLE "dietary_preferences" ENABLE ROW LEVEL SECURITY;--> statement-breakp
 CREATE TABLE "food_nutrients" (
 	"food_id" bigint NOT NULL,
 	"nutrient_id" integer NOT NULL,
-	"amount_per100g" numeric NOT NULL,
+	"amount_per_100g" numeric NOT NULL,
 	CONSTRAINT "food_nutrients_food_id_nutrient_id_pk" PRIMARY KEY("food_id","nutrient_id")
 );
 --> statement-breakpoint

@@ -1,6 +1,6 @@
 {
-  "id": "4d8f02f6-d624-447b-a5a6-e77769c7b188",
-  "prevId": "8d039caa-5edb-405f-bec8-30474f4a857d",
+  "id": "3f49d772-2e90-4c94-abec-92b3748ef2cb",
+  "prevId": "3386722e-44b1-4989-952b-d67ffea64b09",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -608,8 +608,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "amount_per100g": {
-          "name": "amount_per100g",
+        "amount_per_100g": {
+          "name": "amount_per_100g",
           "type": "numeric",
           "primaryKey": false,
           "notNull": true
