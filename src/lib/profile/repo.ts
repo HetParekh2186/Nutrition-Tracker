@@ -4,6 +4,7 @@ import { and, desc, eq, ne } from "drizzle-orm";
 
 import { getDb, type Db } from "@/lib/db";
 import {
+  EQUIPMENT,
   bodyMetrics,
   dietaryPreferences,
   nutrientTargets,
@@ -16,9 +17,9 @@ import {
   computeTargets,
   mergeTargets,
   type ComputedTarget,
-  type TargetInput,
 } from "@/lib/nutrition/dri";
 
+import { targetInputFrom } from "./target-input";
 import type { PreferencesDTO, ProfileDTO, TargetRowDTO } from "./types";
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
@@ -53,34 +54,6 @@ export async function getProfile(userId: string): Promise<ProfileDTO> {
     timezone: profile?.timezone ?? "America/Chicago",
     onboarded: profile?.onboardedAt != null,
     isDemo: user?.isDemo ?? false,
-  };
-}
-
-/** The inputs computeTargets needs, or null while the profile is incomplete. */
-export function targetInputFrom(
-  p: ProfileDTO,
-  onDate: string,
-): TargetInput | null {
-  if (
-    !p.sex ||
-    !p.birthDate ||
-    !p.heightCm ||
-    !p.weightKg ||
-    !p.activityLevel ||
-    !p.goal
-  ) {
-    return null;
-  }
-  return {
-    sex: p.sex,
-    birthDate: p.birthDate,
-    heightCm: p.heightCm,
-    weightKg: p.weightKg,
-    activityLevel: p.activityLevel,
-    goal: p.goal,
-    proteinGPerKg: p.proteinGPerKg,
-    fatPctOfKcal: p.fatPctOfKcal,
-    onDate,
   };
 }
 
@@ -195,7 +168,10 @@ export async function getPreferences(userId: string): Promise<PreferencesDTO> {
     dislikedIngredients: row?.dislikedIngredients ?? [],
     likedCuisines: row?.likedCuisines ?? [],
     maxCookMinutes: row?.maxCookMinutes ?? null,
-    equipment: row?.equipment ?? [],
+    equipment: (row?.equipment ?? []).filter(
+      (e): e is (typeof EQUIPMENT)[number] =>
+        (EQUIPMENT as readonly string[]).includes(e),
+    ),
     spiceLevel: row?.spiceLevel ?? null,
     notes: row?.notes ?? null,
   };

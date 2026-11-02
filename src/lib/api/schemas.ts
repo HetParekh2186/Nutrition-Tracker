@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import { MEAL_SLOTS } from "@/lib/db/schema";
+import { EQUIPMENT, MEAL_SLOTS } from "@/lib/db/enums";
 import { isIsoDate } from "@/lib/nutrition/dates";
 
 export const IsoDate = z.string().refine(isIsoDate, "Use YYYY-MM-DD");
@@ -125,19 +125,7 @@ export const PreferencesUpdateSchema = z.object({
   dislikedIngredients: IngredientList.optional(),
   likedCuisines: IngredientList.optional(),
   maxCookMinutes: z.number().int().min(5).max(600).nullable().optional(),
-  equipment: z
-    .array(
-      z.enum([
-        "oven",
-        "air_fryer",
-        "instant_pot",
-        "grill",
-        "microwave",
-        "blender",
-      ]),
-    )
-    .max(10)
-    .optional(),
+  equipment: z.array(z.enum(EQUIPMENT)).max(10).optional(),
   spiceLevel: z.number().int().min(0).max(3).nullable().optional(),
   notes: z.string().trim().max(500).nullable().optional(),
 });

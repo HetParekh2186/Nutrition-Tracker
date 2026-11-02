@@ -1,6 +1,6 @@
 // Profile, preference and target shapes for the API. Client-safe.
 
-import type { DIET_TYPES } from "@/lib/db/schema";
+import type { DIET_TYPES, Equipment } from "@/lib/db/enums";
 import type { NutrientCategory, NutrientUnit } from "@/lib/nutrition/catalog";
 import type { TargetSource } from "@/lib/nutrition/dri";
 import type { ActivityLevel, Goal, Sex } from "@/lib/nutrition/targets";
@@ -26,7 +26,7 @@ export type PreferencesDTO = {
   dislikedIngredients: string[];
   likedCuisines: string[];
   maxCookMinutes: number | null;
-  equipment: string[];
+  equipment: Equipment[];
   spiceLevel: number | null;
   notes: string | null;
 };

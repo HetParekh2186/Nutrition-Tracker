@@ -29,6 +29,20 @@ import {
 } from "drizzle-orm/pg-core";
 import { anonRole, authenticatedRole } from "drizzle-orm/supabase";
 
+import {
+  ACTIVITY_LEVELS,
+  DIET_TYPES,
+  FOOD_SOURCES,
+  GOALS,
+  INTERACTION_EVENTS,
+  LOGGED_VIA,
+  MEAL_SLOTS,
+  NUTRIENT_CATEGORIES,
+  RECIPE_SOURCES,
+} from "./enums";
+
+export * from "./enums";
+
 export const EMBEDDING_DIMENSIONS = 1024;
 
 const tsvector = customType<{ data: string }>({
@@ -66,15 +80,6 @@ export const users = pgTable(
   },
   (t) => [ownRows("users_own", sql`${t.id}`)],
 );
-
-export const ACTIVITY_LEVELS = [
-  "sedentary",
-  "light",
-  "moderate",
-  "active",
-  "very_active",
-] as const;
-export const GOALS = ["lose", "maintain", "gain", "recomp"] as const;
 
 export const userProfiles = pgTable(
   "user_profiles",
@@ -132,14 +137,6 @@ export const bodyMetrics = pgTable(
   ],
 );
 
-export const DIET_TYPES = [
-  "omnivore",
-  "vegetarian",
-  "eggetarian",
-  "vegan",
-  "pescatarian",
-] as const;
-
 export const dietaryPreferences = pgTable(
   "dietary_preferences",
   {
@@ -179,16 +176,6 @@ export const dietaryPreferences = pgTable(
 );
 
 // ========== Nutrient catalog ==========
-
-export const NUTRIENT_CATEGORIES = [
-  "energy",
-  "macro",
-  "vitamin",
-  "mineral",
-  "lipid",
-  "amino_acid",
-  "other",
-] as const;
 
 export const nutrients = pgTable(
   "nutrients",
@@ -238,15 +225,6 @@ export const nutrientTargets = pgTable(
 );
 
 // ========== Foods ==========
-
-export const FOOD_SOURCES = [
-  "usda_foundation",
-  "usda_sr_legacy",
-  "usda_branded",
-  "off",
-  "custom",
-] as const;
-export type FoodSource = (typeof FOOD_SOURCES)[number];
 
 export const foods = pgTable(
   "foods",
@@ -346,16 +324,6 @@ export const foodPortions = pgTable(
 );
 
 // ========== Recipes ==========
-
-export const MEAL_SLOTS = ["breakfast", "lunch", "dinner", "snack"] as const;
-export type MealSlot = (typeof MEAL_SLOTS)[number];
-
-export const RECIPE_SOURCES = [
-  "user",
-  "ai_generated",
-  "ai_adapted",
-  "imported",
-] as const;
 
 export const recipes = pgTable(
   "recipes",
@@ -494,16 +462,6 @@ export const recipeNutrition = pgTable(
 
 // ========== Activity ==========
 
-export const LOGGED_VIA = [
-  "search",
-  "natural_language",
-  "recent",
-  "copy",
-  "recipe",
-  "cook_mode",
-] as const;
-export type LoggedVia = (typeof LOGGED_VIA)[number];
-
 export const diaryEntries = pgTable(
   "diary_entries",
   {
@@ -540,19 +498,6 @@ export const diaryEntries = pgTable(
     ownRows("diary_entries_own", sql`${t.userId}`),
   ],
 );
-
-export const INTERACTION_EVENTS = [
-  "impression",
-  "view",
-  "save",
-  "unsave",
-  "skip",
-  "cook_start",
-  "cook_complete",
-  "log",
-  "rate",
-] as const;
-export type InteractionEvent = (typeof INTERACTION_EVENTS)[number];
 
 export const recipeInteractions = pgTable(
   "recipe_interactions",

@@ -21,7 +21,7 @@ import { Label } from "@/components/ui/label";
 import { keys, useAddEntry, useDeleteEntry } from "@/hooks/use-diary";
 import { DESKTOP, useMediaQuery } from "@/hooks/use-media-query";
 import { api } from "@/lib/client/api";
-import type { MealSlot } from "@/lib/db/schema";
+import type { MealSlot } from "@/lib/db/enums";
 import { SLOT_LABELS } from "@/lib/diary/slots";
 import { defaultAmount, macrosForGrams } from "@/lib/foods/preview";
 import type { FoodHit } from "@/lib/foods/types";

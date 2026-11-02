@@ -1,4 +1,4 @@
-import { MEAL_SLOTS, type MealSlot } from "@/lib/db/schema";
+import { MEAL_SLOTS, type MealSlot } from "@/lib/db/enums";
 
 export { MEAL_SLOTS };
 

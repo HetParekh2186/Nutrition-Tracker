@@ -3,8 +3,9 @@ import { redirect } from "next/navigation";
 
 import { TodayView } from "@/components/today/today-view";
 import { getUserId } from "@/lib/auth/session";
-import { getDaySummary, getDiaryDay, getTimezone } from "@/lib/diary/repo";
+import { getDaySummary, getDiaryDay } from "@/lib/diary/repo";
 import { isIsoDate, localDate } from "@/lib/nutrition/dates";
+import { getProfile } from "@/lib/profile/repo";
 
 export const metadata: Metadata = { title: "Today" };
 
@@ -15,8 +16,11 @@ export default async function TodayPage({
 }) {
   const userId = await getUserId();
   if (!userId) redirect("/login?next=/today");
+  const profile = await getProfile(userId);
+  // New accounts set up their targets first; the demo is already set up.
+  if (!profile.onboarded && !profile.isDemo) redirect("/onboarding");
   const { date: requested } = await searchParams;
-  const today = localDate(new Date(), await getTimezone(userId));
+  const today = localDate(new Date(), profile.timezone);
   const date = requested && isIsoDate(requested) ? requested : today;
 
   // Render the first paint from the server so the ring is there immediately.

@@ -5,9 +5,17 @@ import type {
   CustomFoodRequestInput,
   DiaryPatchInput,
   NewDiaryEntryInput,
+  PreferencesUpdateInput,
+  ProfileUpdateInput,
+  TargetsUpdateInput,
 } from "@/lib/api/schemas";
 import type { DaySummaryDTO, DiaryDayDTO } from "@/lib/diary/types";
 import type { FoodDetail, FoodSearchResult } from "@/lib/foods/types";
+import type {
+  PreferencesDTO,
+  ProfileDTO,
+  TargetRowDTO,
+} from "@/lib/profile/types";
 
 export class ApiError extends Error {
   constructor(
@@ -65,6 +73,24 @@ export const api = {
   copy: (input: CopyRequestInput) =>
     request<{ copied: number }>("/api/diary/copy", {
       method: "POST",
+      body: JSON.stringify(input),
+    }),
+  profile: () => request<ProfileDTO>("/api/profile"),
+  updateProfile: (input: ProfileUpdateInput) =>
+    request<ProfileDTO>("/api/profile", {
+      method: "PUT",
+      body: JSON.stringify(input),
+    }),
+  preferences: () => request<PreferencesDTO>("/api/preferences"),
+  updatePreferences: (input: PreferencesUpdateInput) =>
+    request<PreferencesDTO>("/api/preferences", {
+      method: "PUT",
+      body: JSON.stringify(input),
+    }),
+  targets: () => request<TargetRowDTO[]>("/api/targets"),
+  updateTargets: (input: TargetsUpdateInput) =>
+    request<TargetRowDTO[]>("/api/targets", {
+      method: "PUT",
       body: JSON.stringify(input),
     }),
 };

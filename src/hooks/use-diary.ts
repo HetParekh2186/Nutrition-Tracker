@@ -14,7 +14,7 @@ import type {
   NewDiaryEntryInput,
 } from "@/lib/api/schemas";
 import { api } from "@/lib/client/api";
-import type { MealSlot } from "@/lib/db/schema";
+import type { MealSlot } from "@/lib/db/enums";
 import type {
   DaySummaryDTO,
   DiaryDayDTO,

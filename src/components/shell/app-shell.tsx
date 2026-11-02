@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, LogOut, Plus } from "lucide-react";
+import { CalendarDays, LogOut, Plus, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore, type ReactNode } from "react";
@@ -13,6 +13,7 @@ export type NavItem = { href: string; label: string; icon: ReactNode };
 
 export const NAV: NavItem[] = [
   { href: "/today", label: "Today", icon: <CalendarDays aria-hidden /> },
+  { href: "/settings", label: "Settings", icon: <Settings aria-hidden /> },
 ];
 
 /** "⌘K" on Apple devices, "Ctrl K" elsewhere. */

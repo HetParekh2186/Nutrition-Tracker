@@ -1,6 +1,6 @@
 // Shapes returned by the foods API. Safe to import from client code.
 
-import type { FoodSource } from "@/lib/db/schema";
+import type { FoodSource } from "@/lib/db/enums";
 import type { NutrientMap } from "@/lib/nutrition/math";
 
 export type FoodHit = {
