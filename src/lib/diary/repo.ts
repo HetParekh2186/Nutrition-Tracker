@@ -24,6 +24,8 @@ import {
 import { macrosOf, subtractMacros } from "@/lib/nutrition/macros";
 import { sumNutrients, type NutrientMap } from "@/lib/nutrition/math";
 
+import { recordInteraction } from "@/lib/recommend/interactions";
+
 import { entryNutrients } from "./compute";
 import type {
   DaySummaryDTO,
@@ -275,6 +277,10 @@ export async function addEntry(
     .values(values)
     .returning({ id: diaryEntries.id });
   if (!row) throw new Error("Insert failed");
+  // Logging a recipe is a taste signal (SPEC.md: "Recipe logged", 2.0).
+  if (input.item.kind === "recipe") {
+    await recordInteraction(userId, input.item.recipeId, "log");
+  }
   return row.id;
 }
 
