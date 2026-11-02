@@ -606,3 +606,31 @@ export const cookMessages = pgTable(
     }),
   ],
 );
+
+// ========== LLM usage (not in the spec's 18 tables) ==========
+// Backs the per-user rate limit and per-feature token logging that SPEC.md
+// "LLM features" asks for. Written by the server only.
+
+export const llmUsage = pgTable(
+  "llm_usage",
+  {
+    id: bigserial({ mode: "number" }).primaryKey(),
+    userId: uuid()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    feature: text().notNull(), // 'recipe_generate', 'log_parse', ...
+    model: text().notNull(),
+    inputTokens: integer().notNull().default(0),
+    outputTokens: integer().notNull().default(0),
+    ok: boolean().notNull().default(true),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("llm_usage_user_time").on(t.userId, t.createdAt.desc()),
+    pgPolicy("llm_usage_read_own", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${t.userId} = ${uid}`,
+    }),
+  ],
+);
