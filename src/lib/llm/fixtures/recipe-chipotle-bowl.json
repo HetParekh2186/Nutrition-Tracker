@@ -1,0 +1,82 @@
+{
+  "title": "Chipotle chicken quinoa bowl",
+  "description": "Smoky lime chicken over quinoa with black beans, corn and a cool yogurt sauce.",
+  "cuisine": "Mexican",
+  "meal_types": ["dinner", "lunch"],
+  "servings": 2,
+  "prep_minutes": 15,
+  "cook_minutes": 25,
+  "ingredients": [
+    {
+      "display_text": "300 g boneless chicken breast",
+      "food_query": "chicken, breast, raw",
+      "quantity_g": 300
+    },
+    {
+      "display_text": "120 g quinoa, rinsed",
+      "food_query": "quinoa, uncooked",
+      "quantity_g": 120
+    },
+    {
+      "display_text": "1 can black beans, drained",
+      "food_query": "beans, black, canned",
+      "quantity_g": 240
+    },
+    {
+      "display_text": "100 g sweet corn",
+      "food_query": "corn, sweet, yellow, raw",
+      "quantity_g": 100
+    },
+    {
+      "display_text": "1 tbsp olive oil",
+      "food_query": "oil, olive",
+      "quantity_g": 14
+    },
+    {
+      "display_text": "2 tsp chipotle chili powder",
+      "food_query": "chipotle powder",
+      "quantity_g": 5
+    },
+    {
+      "display_text": "120 g plain Greek yogurt",
+      "food_query": "yogurt, greek, plain, nonfat",
+      "quantity_g": 120,
+      "group_label": "For the sauce"
+    },
+    {
+      "display_text": "Juice of 1 lime",
+      "food_query": "lime juice, raw",
+      "quantity_g": 30,
+      "group_label": "For the sauce"
+    }
+  ],
+  "steps": [
+    {
+      "instruction": "Rinse the quinoa and simmer it in 240 ml water, covered.",
+      "timer_seconds": 900,
+      "ingredient_indexes": [1]
+    },
+    {
+      "instruction": "Rub the chicken with the oil and chipotle powder.",
+      "ingredient_indexes": [0, 4, 5]
+    },
+    {
+      "instruction": "Sear the chicken over medium-high heat until it reaches 74 °C inside.",
+      "timer_seconds": 720,
+      "ingredient_indexes": [0]
+    },
+    {
+      "instruction": "Warm the beans and corn in the same pan.",
+      "timer_seconds": 180,
+      "ingredient_indexes": [2, 3]
+    },
+    {
+      "instruction": "Stir the yogurt with the lime juice and a pinch of salt.",
+      "ingredient_indexes": [6, 7]
+    },
+    {
+      "instruction": "Slice the chicken and build the bowls over the quinoa.",
+      "ingredient_indexes": [0, 1, 2, 3, 6]
+    }
+  ]
+}
