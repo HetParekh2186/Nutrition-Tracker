@@ -1,6 +1,6 @@
 // Portion and unit conversion for the portion picker. Pure, so tested.
 
-import type { MealSlot } from "@/lib/db/schema";
+import type { MealSlot } from "@/lib/db/enums";
 
 export const GRAMS_PER_OZ = 28.349523125;
 

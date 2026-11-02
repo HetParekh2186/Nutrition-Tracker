@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import { MEAL_SLOTS } from "@/lib/db/schema";
+import { EQUIPMENT, MEAL_SLOTS } from "@/lib/db/enums";
 import { isIsoDate } from "@/lib/nutrition/dates";
 
 export const IsoDate = z.string().refine(isIsoDate, "Use YYYY-MM-DD");
@@ -80,3 +80,92 @@ export const CustomFoodRequest = z.object({
   sodiumMg: Amount.optional(),
 });
 export type CustomFoodRequestInput = z.input<typeof CustomFoodRequest>;
+
+// ---------- Profile, preferences, targets (Phase 2) ----------
+
+/** Body stats always arrive in metric; the client converts imperial. */
+export const ProfileUpdateSchema = z.object({
+  sex: z.enum(["male", "female"]).optional(),
+  birthDate: IsoDate.optional(),
+  heightCm: z.number().min(100).max(250).optional(),
+  weightKg: z.number().min(30).max(300).optional(),
+  activityLevel: z
+    .enum(["sedentary", "light", "moderate", "active", "very_active"])
+    .optional(),
+  goal: z.enum(["lose", "maintain", "gain", "recomp"]).optional(),
+  proteinGPerKg: z.number().min(0.8).max(3.5).optional(),
+  fatPctOfKcal: z.number().min(0.15).max(0.5).optional(),
+  unitSystem: z.enum(["metric", "imperial"]).optional(),
+  timezone: z
+    .string()
+    .refine((tz) => {
+      try {
+        new Intl.DateTimeFormat("en-US", { timeZone: tz });
+        return true;
+      } catch {
+        return false;
+      }
+    }, "Unknown timezone")
+    .optional(),
+  completeOnboarding: z.boolean().optional(),
+});
+export type ProfileUpdateInput = z.input<typeof ProfileUpdateSchema>;
+
+const IngredientList = z
+  .array(z.string().trim().toLowerCase().min(1).max(60))
+  .max(50)
+  .transform((list) => [...new Set(list)]);
+
+export const PreferencesUpdateSchema = z.object({
+  dietType: z
+    .enum(["omnivore", "vegetarian", "eggetarian", "vegan", "pescatarian"])
+    .nullable()
+    .optional(),
+  excludedIngredients: IngredientList.optional(),
+  dislikedIngredients: IngredientList.optional(),
+  likedCuisines: IngredientList.optional(),
+  maxCookMinutes: z.number().int().min(5).max(600).nullable().optional(),
+  equipment: z.array(z.enum(EQUIPMENT)).max(10).optional(),
+  spiceLevel: z.number().int().min(0).max(3).nullable().optional(),
+  notes: z.string().trim().max(500).nullable().optional(),
+});
+export type PreferencesUpdateInput = z.input<typeof PreferencesUpdateSchema>;
+
+const TargetAmount = z.number().min(0).max(100_000).nullable();
+
+export const TargetsUpdateSchema = z.object({
+  targets: z
+    .array(
+      z.union([
+        z.object({ nutrientId: z.number().int(), reset: z.literal(true) }),
+        z
+          .object({
+            nutrientId: z.number().int(),
+            min: TargetAmount,
+            max: TargetAmount,
+          })
+          .refine((t) => t.min === null || t.max === null || t.min <= t.max, {
+            message: "Minimum must not be above maximum",
+          }),
+      ]),
+    )
+    .min(1)
+    .max(100),
+});
+export type TargetsUpdateInput = z.input<typeof TargetsUpdateSchema>;
+
+// ---------- Insights (Phase 2) ----------
+
+export const RangeQuery = z
+  .object({ from: IsoDate, to: IsoDate })
+  .refine((v) => v.from <= v.to, "from must be on or before to")
+  .refine(
+    (v) => Date.parse(v.to) - Date.parse(v.from) <= 365 * 86_400_000,
+    "Ranges are limited to one year",
+  );
+
+export const SourcesQuery = z.object({
+  nutrient: z.coerce.number().int().positive(),
+  from: IsoDate,
+  to: IsoDate,
+});

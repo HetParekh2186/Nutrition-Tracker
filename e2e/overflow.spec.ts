@@ -56,3 +56,16 @@ test("no horizontal overflow on Today with long food names", async ({
     for (const id of ids) await page.request.delete(`/api/diary/${id}`);
   }
 });
+
+for (const path of ["/insights?range=90", "/settings", "/onboarding"]) {
+  test(`no horizontal overflow on ${path}`, async ({ page }) => {
+    await signInAsDemo(page);
+    await page.goto(path);
+    await page.waitForLoadState("networkidle");
+    const { vw, scroll } = await page.evaluate(() => ({
+      vw: document.documentElement.clientWidth,
+      scroll: document.documentElement.scrollWidth,
+    }));
+    expect(scroll).toBeLessThanOrEqual(vw);
+  });
+}

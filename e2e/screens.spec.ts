@@ -70,3 +70,35 @@ test("today with a logged day", async ({ page }, info) => {
     for (const id of ids) await page.request.delete(`/api/diary/${id}`);
   }
 });
+
+test("insights, settings and onboarding", async ({ page }, info) => {
+  await signInAsDemo(page);
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.goto("/insights?range=30");
+    await expect(page.getByText("Average vs target")).toBeVisible();
+    await page.getByRole("button", { name: /^Vitamin D:/ }).click();
+    await expect(
+      page.getByText(/Where your vitamin d comes from/i),
+    ).toBeVisible();
+    await page.waitForTimeout(500);
+    await page.screenshot({
+      path: `${DIR}/insights-${info.project.name}-${scheme}.png`,
+      fullPage: true,
+    });
+  }
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto("/settings");
+  await expect(page.getByRole("heading", { name: "Targets" })).toBeVisible();
+  await page.screenshot({
+    path: `${DIR}/settings-${info.project.name}.png`,
+    fullPage: true,
+  });
+  await page.goto("/onboarding");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByText("Daily target")).toBeVisible();
+  await page.screenshot({
+    path: `${DIR}/onboarding-${info.project.name}.png`,
+    fullPage: true,
+  });
+});

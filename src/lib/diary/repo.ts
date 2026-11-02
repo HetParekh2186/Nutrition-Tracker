@@ -1,7 +1,7 @@
 // Diary queries. Every function takes the user id and filters by it; the
 // app connects as a role that bypasses RLS, so this is the access control.
 
-import { and, asc, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNull, lte, or, sql } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
 import {
@@ -58,12 +58,13 @@ async function recipeMapsFor(
   return out;
 }
 
-type LoadedEntry = DiaryEntryDTO & { nutrients: NutrientMap };
+export type LoadedEntry = DiaryEntryDTO & { nutrients: NutrientMap };
 
-/** Entries for a day with their nutrients computed. */
-async function loadEntries(
+/** Entries for a day (or an inclusive date range) with nutrients computed. */
+export async function loadEntries(
   userId: string,
-  date: string,
+  from: string,
+  to: string = from,
 ): Promise<LoadedEntry[]> {
   const rows = await getDb()
     .select({
@@ -76,7 +77,11 @@ async function loadEntries(
     .leftJoin(foods, eq(foods.id, diaryEntries.foodId))
     .leftJoin(recipes, eq(recipes.id, diaryEntries.recipeId))
     .where(
-      and(eq(diaryEntries.userId, userId), eq(diaryEntries.entryDate, date)),
+      and(
+        eq(diaryEntries.userId, userId),
+        gte(diaryEntries.entryDate, from),
+        lte(diaryEntries.entryDate, to),
+      ),
     )
     .orderBy(asc(diaryEntries.createdAt), asc(diaryEntries.id));
 
@@ -137,7 +142,7 @@ export async function getDiaryDay(
   return { date, slots };
 }
 
-async function targetsFor(
+export async function targetsFor(
   userId: string,
 ): Promise<{ targets: Record<number, TargetRange>; defaults: boolean }> {
   const rows = await getDb()

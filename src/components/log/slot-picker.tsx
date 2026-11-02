@@ -1,6 +1,6 @@
 "use client";
 
-import type { MealSlot } from "@/lib/db/schema";
+import type { MealSlot } from "@/lib/db/enums";
 import { MEAL_SLOTS, SLOT_LABELS } from "@/lib/diary/slots";
 import { cn } from "@/lib/utils";
 

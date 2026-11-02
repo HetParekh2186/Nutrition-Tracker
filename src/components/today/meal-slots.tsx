@@ -8,7 +8,7 @@ import { useQuickLog } from "@/components/log/quick-log-provider";
 import { MacroLine } from "@/components/nutrition/macro-chip";
 import { Button } from "@/components/ui/button";
 import { useCopyEntries } from "@/hooks/use-diary";
-import type { MealSlot } from "@/lib/db/schema";
+import type { MealSlot } from "@/lib/db/enums";
 import { MEAL_SLOTS, SLOT_LABELS } from "@/lib/diary/slots";
 import type { DiaryDayDTO, DiaryEntryDTO } from "@/lib/diary/types";
 import { addDays } from "@/lib/nutrition/dates";

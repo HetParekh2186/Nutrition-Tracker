@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDeleteEntry, useUpdateEntry } from "@/hooks/use-diary";
-import type { MealSlot } from "@/lib/db/schema";
+import type { MealSlot } from "@/lib/db/enums";
 import type { DiaryEntryDTO } from "@/lib/diary/types";
 
 /** Edit the amount or slot of a diary entry, or delete it. */

@@ -1,7 +1,7 @@
 // Shapes returned by the diary and summary APIs. Safe to import from client
 // code.
 
-import type { LoggedVia, MealSlot } from "@/lib/db/schema";
+import type { LoggedVia, MealSlot } from "@/lib/db/enums";
 import type { NutrientCategory, NutrientUnit } from "@/lib/nutrition/catalog";
 import type { Macros } from "@/lib/nutrition/macros";
 

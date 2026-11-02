@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 
-import type { MealSlot } from "@/lib/db/schema";
+import type { MealSlot } from "@/lib/db/enums";
 
 import { QuickLog } from "./quick-log";
 
