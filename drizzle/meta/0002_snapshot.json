@@ -1,0 +1,2005 @@
+{
+  "id": "1e46aab1-af62-4760-b85e-9e49508d0ea3",
+  "prevId": "4d8f02f6-d624-447b-a5a6-e77769c7b188",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.body_metrics": {
+      "name": "body_metrics",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "measured_on": {
+          "name": "measured_on",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "weight_kg": {
+          "name": "weight_kg",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "body_fat_pct": {
+          "name": "body_fat_pct",
+          "type": "numeric(4, 1)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "body_metrics_user_id_users_id_fk": {
+          "name": "body_metrics_user_id_users_id_fk",
+          "tableFrom": "body_metrics",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "tableTo": "users",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "body_metrics_userId_measuredOn_unique": {
+          "name": "body_metrics_userId_measuredOn_unique",
+          "columns": [
+            "user_id",
+            "measured_on"
+          ],
+          "nullsNotDistinct": false
+        }
+      },
+      "policies": {
+        "body_metrics_own": {
+          "name": "body_metrics_own",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"body_metrics\".\"user_id\" = (select auth.uid())",
+          "withCheck": "\"body_metrics\".\"user_id\" = (select auth.uid())"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.cook_messages": {
+      "name": "cook_messages",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content": {
+          "name": "content",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "step_at_time": {
+          "name": "step_at_time",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "cook_messages_session": {
+          "name": "cook_messages_session",
+          "columns": [
+            {
+              "expression": "session_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "cook_messages_session_id_cook_sessions_id_fk": {
+          "name": "cook_messages_session_id_cook_sessions_id_fk",
+          "tableFrom": "cook_messages",
+          "columnsFrom": [
+            "session_id"
+          ],
+          "tableTo": "cook_sessions",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "cook_messages_own": {
+          "name": "cook_messages_own",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "authenticated"
+          ],
+          "using": "exists (select 1 from cook_sessions s where s.id = \"cook_messages\".\"session_id\" and s.user_id = (select auth.uid()))",
+          "withCheck": "exists (select 1 from cook_sessions s where s.id = \"cook_messages\".\"session_id\" and s.user_id = (select auth.uid()))"
+        }
+      },
+      "checkConstraints": {
+        "cook_messages_role": {
+          "name": "cook_messages_role",
+          "value": "\"cook_messages\".\"role\" in ('user','assistant','tool')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.cook_sessions": {
+      "name": "cook_sessions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recipe_id": {
+          "name": "recipe_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "servings": {
+          "name": "servings",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "current_step": {
+          "name": "current_step",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "substitutions": {
+          "name": "substitutions",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'"
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "cook_sessions_user_id_users_id_fk": {
+          "name": "cook_sessions_user_id_users_id_fk",
+          "tableFrom": "cook_sessions",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "tableTo": "users",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "cook_sessions_recipe_id_recipes_id_fk": {
+          "name": "cook_sessions_recipe_id_recipes_id_fk",
+          "tableFrom": "cook_sessions",
+          "columnsFrom": [
+            "recipe_id"
+          ],
+          "tableTo": "recipes",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "cook_sessions_own": {
+          "name": "cook_sessions_own",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"cook_sessions\".\"user_id\" = (select auth.uid())",
+          "withCheck": "\"cook_sessions\".\"user_id\" = (select auth.uid())"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.diary_entries": {
+      "name": "diary_entries",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entry_date": {
+          "name": "entry_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "meal_slot": {
+          "name": "meal_slot",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "food_id": {
+          "name": "food_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recipe_id": {
+          "name": "recipe_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "quantity_g": {
+          "name": "quantity_g",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "servings": {
+          "name": "servings",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "portion_label": {
+          "name": "portion_label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cook_session_id": {
+          "name": "cook_session_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "logged_via": {
+          "name": "logged_via",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'search'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "diary_user_date": {
+          "name": "diary_user_date",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "entry_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "diary_user_food": {
+          "name": "diary_user_food",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "food_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "diary_entries_user_id_users_id_fk": {
+          "name": "diary_entries_user_id_users_id_fk",
+          "tableFrom": "diary_entries",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "tableTo": "users",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "diary_entries_food_id_foods_id_fk": {
+          "name": "diary_entries_food_id_foods_id_fk",
+          "tableFrom": "diary_entries",
+          "columnsFrom": [
+            "food_id"
+          ],
+          "tableTo": "foods",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "diary_entries_recipe_id_recipes_id_fk": {
+          "name": "diary_entries_recipe_id_recipes_id_fk",
+          "tableFrom": "diary_entries",
+          "columnsFrom": [
+            "recipe_id"
+          ],
+          "tableTo": "recipes",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "diary_entries_own": {
+          "name": "diary_entries_own",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"diary_entries\".\"user_id\" = (select auth.uid())",
+          "withCheck": "\"diary_entries\".\"user_id\" = (select auth.uid())"
+        }
+      },
+      "checkConstraints": {
+        "diary_entries_slot": {
+          "name": "diary_entries_slot",
+          "value": "\"diary_entries\".\"meal_slot\" in ('breakfast','lunch','dinner','snack')"
+        },
+        "diary_entries_via": {
+          "name": "diary_entries_via",
+          "value": "\"diary_entries\".\"logged_via\" in ('search','natural_language','recent','copy','recipe','cook_mode')"
+        },
+        "diary_entries_food_or_recipe": {
+          "name": "diary_entries_food_or_recipe",
+          "value": "(\"diary_entries\".\"food_id\" is not null and \"diary_entries\".\"quantity_g\" is not null and \"diary_entries\".\"recipe_id\" is null) or (\"diary_entries\".\"recipe_id\" is not null and \"diary_entries\".\"servings\" is not null and \"diary_entries\".\"food_id\" is null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.dietary_preferences": {
+      "name": "dietary_preferences",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "diet_type": {
+          "name": "diet_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "excluded_ingredients": {
+          "name": "excluded_ingredients",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "disliked_ingredients": {
+          "name": "disliked_ingredients",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "liked_cuisines": {
+          "name": "liked_cuisines",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "max_cook_minutes": {
+          "name": "max_cook_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "equipment": {
+          "name": "equipment",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "spice_level": {
+          "name": "spice_level",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "dietary_preferences_user_id_users_id_fk": {
+          "name": "dietary_preferences_user_id_users_id_fk",
+          "tableFrom": "dietary_preferences",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "tableTo": "users",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "dietary_preferences_own": {
+          "name": "dietary_preferences_own",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"dietary_preferences\".\"user_id\" = (select auth.uid())",
+          "withCheck": "\"dietary_preferences\".\"user_id\" = (select auth.uid())"
+        }
+      },
+      "checkConstraints": {
+        "dietary_preferences_diet": {
+          "name": "dietary_preferences_diet",
+          "value": "\"dietary_preferences\".\"diet_type\" in ('omnivore','vegetarian','eggetarian','vegan','pescatarian')"
+        },
+        "dietary_preferences_spice": {
+          "name": "dietary_preferences_spice",
+          "value": "\"dietary_preferences\".\"spice_level\" between 0 and 3"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.food_nutrients": {
+      "name": "food_nutrients",
+      "schema": "",
+      "columns": {
+        "food_id": {
+          "name": "food_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nutrient_id": {
+          "name": "nutrient_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount_per100g": {
+          "name": "amount_per100g",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "food_nutrients_food_id_foods_id_fk": {
+          "name": "food_nutrients_food_id_foods_id_fk",
+          "tableFrom": "food_nutrients",
+          "columnsFrom": [
+            "food_id"
+          ],
+          "tableTo": "foods",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "food_nutrients_nutrient_id_nutrients_id_fk": {
+          "name": "food_nutrients_nutrient_id_nutrients_id_fk",
+          "tableFrom": "food_nutrients",
+          "columnsFrom": [
+            "nutrient_id"
+          ],
+          "tableTo": "nutrients",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "food_nutrients_food_id_nutrient_id_pk": {
+          "name": "food_nutrients_food_id_nutrient_id_pk",
+          "columns": [
+            "food_id",
+            "nutrient_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "food_nutrients_read": {
+          "name": "food_nutrients_read",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "exists (select 1 from foods f where f.id = \"food_nutrients\".\"food_id\" and (f.owner_id is null or f.owner_id = (select auth.uid())))"
+        },
+        "food_nutrients_write_own": {
+          "name": "food_nutrients_write_own",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "authenticated"
+          ],
+          "using": "exists (select 1 from foods f where f.id = \"food_nutrients\".\"food_id\" and f.owner_id = (select auth.uid()))",
+          "withCheck": "exists (select 1 from foods f where f.id = \"food_nutrients\".\"food_id\" and f.owner_id = (select auth.uid()))"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.food_portions": {
+      "name": "food_portions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "food_id": {
+          "name": "food_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grams": {
+          "name": "grams",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "food_portions_food": {
+          "name": "food_portions_food",
+          "columns": [
+            {
+              "expression": "food_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "food_portions_food_id_foods_id_fk": {
+          "name": "food_portions_food_id_foods_id_fk",
+          "tableFrom": "food_portions",
+          "columnsFrom": [
+            "food_id"
+          ],
+          "tableTo": "foods",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "food_portions_read": {
+          "name": "food_portions_read",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "exists (select 1 from foods f where f.id = \"food_portions\".\"food_id\" and (f.owner_id is null or f.owner_id = (select auth.uid())))"
+        },
+        "food_portions_write_own": {
+          "name": "food_portions_write_own",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "authenticated"
+          ],
+          "using": "exists (select 1 from foods f where f.id = \"food_portions\".\"food_id\" and f.owner_id = (select auth.uid()))",
+          "withCheck": "exists (select 1 from foods f where f.id = \"food_portions\".\"food_id\" and f.owner_id = (select auth.uid()))"
+        }
+      },
+      "checkConstraints": {
+        "food_portions_grams": {
+          "name": "food_portions_grams",
+          "value": "\"food_portions\".\"grams\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.foods": {
+      "name": "foods",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_id": {
+          "name": "source_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "brand": {
+          "name": "brand",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "search_tsv": {
+          "name": "search_tsv",
+          "type": "tsvector",
+          "primaryKey": false,
+          "notNull": false,
+          "generated": {
+            "type": "stored",
+            "as": "to_tsvector('english', coalesce(name,'') || ' ' || coalesce(brand,''))"
+          }
+        },
+        "embedding": {
+          "name": "embedding",
+          "type": "vector(1024)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "foods_name_trgm": {
+          "name": "foods_name_trgm",
+          "columns": [
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "gin_trgm_ops"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "gin",
+          "concurrently": false
+        },
+        "foods_tsv": {
+          "name": "foods_tsv",
+          "columns": [
+            {
+              "expression": "search_tsv",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "gin",
+          "concurrently": false
+        },
+        "foods_owner": {
+          "name": "foods_owner",
+          "columns": [
+            {
+              "expression": "owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "foods_owner_id_users_id_fk": {
+          "name": "foods_owner_id_users_id_fk",
+          "tableFrom": "foods",
+          "columnsFrom": [
+            "owner_id"
+          ],
+          "tableTo": "users",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "foods_source_sourceId_unique": {
+          "name": "foods_source_sourceId_unique",
+          "columns": [
+            "source",
+            "source_id"
+          ],
+          "nullsNotDistinct": false
+        }
+      },
+      "policies": {
+        "foods_read": {
+          "name": "foods_read",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"foods\".\"owner_id\" is null or \"foods\".\"owner_id\" = (select auth.uid())"
+        },
+        "foods_write_own": {
+          "name": "foods_write_own",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"foods\".\"owner_id\" = (select auth.uid())",
+          "withCheck": "\"foods\".\"owner_id\" = (select auth.uid())"
+        }
+      },
+      "checkConstraints": {
+        "foods_source": {
+          "name": "foods_source",
+          "value": "\"foods\".\"source\" in ('usda_foundation','usda_sr_legacy','usda_branded','off','custom')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.nutrient_targets": {
+      "name": "nutrient_targets",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nutrient_id": {
+          "name": "nutrient_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "min_amount": {
+          "name": "min_amount",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "max_amount": {
+          "name": "max_amount",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'default'"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "nutrient_targets_user_id_users_id_fk": {
+          "name": "nutrient_targets_user_id_users_id_fk",
+          "tableFrom": "nutrient_targets",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "tableTo": "users",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "nutrient_targets_nutrient_id_nutrients_id_fk": {
+          "name": "nutrient_targets_nutrient_id_nutrients_id_fk",
+          "tableFrom": "nutrient_targets",
+          "columnsFrom": [
+            "nutrient_id"
+          ],
+          "tableTo": "nutrients",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "nutrient_targets_user_id_nutrient_id_pk": {
+          "name": "nutrient_targets_user_id_nutrient_id_pk",
+          "columns": [
+            "user_id",
+            "nutrient_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "nutrient_targets_own": {
+          "name": "nutrient_targets_own",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"nutrient_targets\".\"user_id\" = (select auth.uid())",
+          "withCheck": "\"nutrient_targets\".\"user_id\" = (select auth.uid())"
+        }
+      },
+      "checkConstraints": {
+        "nutrient_targets_source": {
+          "name": "nutrient_targets_source",
+          "value": "\"nutrient_targets\".\"source\" in ('default','computed','user')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.nutrients": {
+      "name": "nutrients",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unit": {
+          "name": "unit",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category": {
+          "name": "category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "display_order": {
+          "name": "display_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "nutrients_read": {
+          "name": "nutrients_read",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "anon",
+            "authenticated"
+          ],
+          "using": "true"
+        }
+      },
+      "checkConstraints": {
+        "nutrients_category": {
+          "name": "nutrients_category",
+          "value": "\"nutrients\".\"category\" in ('energy','macro','vitamin','mineral','lipid','amino_acid','other')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.recipe_ingredients": {
+      "name": "recipe_ingredients",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "recipe_id": {
+          "name": "recipe_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "food_id": {
+          "name": "food_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "quantity_g": {
+          "name": "quantity_g",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "display_text": {
+          "name": "display_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_optional": {
+          "name": "is_optional",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "group_label": {
+          "name": "group_label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "recipe_ingredients_recipe": {
+          "name": "recipe_ingredients_recipe",
+          "columns": [
+            {
+              "expression": "recipe_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "recipe_ingredients_recipe_id_recipes_id_fk": {
+          "name": "recipe_ingredients_recipe_id_recipes_id_fk",
+          "tableFrom": "recipe_ingredients",
+          "columnsFrom": [
+            "recipe_id"
+          ],
+          "tableTo": "recipes",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "recipe_ingredients_food_id_foods_id_fk": {
+          "name": "recipe_ingredients_food_id_foods_id_fk",
+          "tableFrom": "recipe_ingredients",
+          "columnsFrom": [
+            "food_id"
+          ],
+          "tableTo": "foods",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "recipe_ingredients_read": {
+          "name": "recipe_ingredients_read",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "exists (select 1 from recipes r where r.id = \"recipe_ingredients\".\"recipe_id\" and (r.owner_id is null or r.owner_id = (select auth.uid())))"
+        },
+        "recipe_ingredients_write_own": {
+          "name": "recipe_ingredients_write_own",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "authenticated"
+          ],
+          "using": "exists (select 1 from recipes r where r.id = \"recipe_ingredients\".\"recipe_id\" and r.owner_id = (select auth.uid()))",
+          "withCheck": "exists (select 1 from recipes r where r.id = \"recipe_ingredients\".\"recipe_id\" and r.owner_id = (select auth.uid()))"
+        }
+      },
+      "checkConstraints": {
+        "recipe_ingredients_qty": {
+          "name": "recipe_ingredients_qty",
+          "value": "\"recipe_ingredients\".\"quantity_g\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.recipe_interactions": {
+      "name": "recipe_interactions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recipe_id": {
+          "name": "recipe_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event": {
+          "name": "event",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rating": {
+          "name": "rating",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "interactions_user": {
+          "name": "interactions_user",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "recipe_interactions_user_id_users_id_fk": {
+          "name": "recipe_interactions_user_id_users_id_fk",
+          "tableFrom": "recipe_interactions",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "tableTo": "users",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "recipe_interactions_recipe_id_recipes_id_fk": {
+          "name": "recipe_interactions_recipe_id_recipes_id_fk",
+          "tableFrom": "recipe_interactions",
+          "columnsFrom": [
+            "recipe_id"
+          ],
+          "tableTo": "recipes",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "recipe_interactions_own": {
+          "name": "recipe_interactions_own",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"recipe_interactions\".\"user_id\" = (select auth.uid())",
+          "withCheck": "\"recipe_interactions\".\"user_id\" = (select auth.uid())"
+        }
+      },
+      "checkConstraints": {
+        "recipe_interactions_event": {
+          "name": "recipe_interactions_event",
+          "value": "\"recipe_interactions\".\"event\" in ('impression','view','save','unsave','skip','cook_start','cook_complete','log','rate')"
+        },
+        "recipe_interactions_rating": {
+          "name": "recipe_interactions_rating",
+          "value": "\"recipe_interactions\".\"rating\" between 1 and 5"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.recipe_nutrition": {
+      "name": "recipe_nutrition",
+      "schema": "",
+      "columns": {
+        "recipe_id": {
+          "name": "recipe_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nutrient_id": {
+          "name": "nutrient_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount_per_serving": {
+          "name": "amount_per_serving",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "recipe_nutrition_recipe_id_recipes_id_fk": {
+          "name": "recipe_nutrition_recipe_id_recipes_id_fk",
+          "tableFrom": "recipe_nutrition",
+          "columnsFrom": [
+            "recipe_id"
+          ],
+          "tableTo": "recipes",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "recipe_nutrition_nutrient_id_nutrients_id_fk": {
+          "name": "recipe_nutrition_nutrient_id_nutrients_id_fk",
+          "tableFrom": "recipe_nutrition",
+          "columnsFrom": [
+            "nutrient_id"
+          ],
+          "tableTo": "nutrients",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "recipe_nutrition_recipe_id_nutrient_id_pk": {
+          "name": "recipe_nutrition_recipe_id_nutrient_id_pk",
+          "columns": [
+            "recipe_id",
+            "nutrient_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "recipe_nutrition_read": {
+          "name": "recipe_nutrition_read",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "exists (select 1 from recipes r where r.id = \"recipe_nutrition\".\"recipe_id\" and (r.owner_id is null or r.owner_id = (select auth.uid())))"
+        },
+        "recipe_nutrition_write_own": {
+          "name": "recipe_nutrition_write_own",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "authenticated"
+          ],
+          "using": "exists (select 1 from recipes r where r.id = \"recipe_nutrition\".\"recipe_id\" and r.owner_id = (select auth.uid()))",
+          "withCheck": "exists (select 1 from recipes r where r.id = \"recipe_nutrition\".\"recipe_id\" and r.owner_id = (select auth.uid()))"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.recipe_steps": {
+      "name": "recipe_steps",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "recipe_id": {
+          "name": "recipe_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "instruction": {
+          "name": "instruction",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "timer_seconds": {
+          "name": "timer_seconds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ingredient_ids": {
+          "name": "ingredient_ids",
+          "type": "bigint[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "recipe_steps_recipe_id_recipes_id_fk": {
+          "name": "recipe_steps_recipe_id_recipes_id_fk",
+          "tableFrom": "recipe_steps",
+          "columnsFrom": [
+            "recipe_id"
+          ],
+          "tableTo": "recipes",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "recipe_steps_recipeId_position_unique": {
+          "name": "recipe_steps_recipeId_position_unique",
+          "columns": [
+            "recipe_id",
+            "position"
+          ],
+          "nullsNotDistinct": false
+        }
+      },
+      "policies": {
+        "recipe_steps_read": {
+          "name": "recipe_steps_read",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "exists (select 1 from recipes r where r.id = \"recipe_steps\".\"recipe_id\" and (r.owner_id is null or r.owner_id = (select auth.uid())))"
+        },
+        "recipe_steps_write_own": {
+          "name": "recipe_steps_write_own",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "authenticated"
+          ],
+          "using": "exists (select 1 from recipes r where r.id = \"recipe_steps\".\"recipe_id\" and r.owner_id = (select auth.uid()))",
+          "withCheck": "exists (select 1 from recipes r where r.id = \"recipe_steps\".\"recipe_id\" and r.owner_id = (select auth.uid()))"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.recipes": {
+      "name": "recipes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "parent_recipe_id": {
+          "name": "parent_recipe_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cuisine": {
+          "name": "cuisine",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "meal_types": {
+          "name": "meal_types",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "tags": {
+          "name": "tags",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "servings": {
+          "name": "servings",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "prep_minutes": {
+          "name": "prep_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cook_minutes": {
+          "name": "cook_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cover_seed": {
+          "name": "cover_seed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "floor(random()*1e6)"
+        },
+        "embedding": {
+          "name": "embedding",
+          "type": "vector(1024)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "recipes_embedding": {
+          "name": "recipes_embedding",
+          "columns": [
+            {
+              "expression": "embedding",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "vector_cosine_ops"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "hnsw",
+          "concurrently": false
+        },
+        "recipes_owner": {
+          "name": "recipes_owner",
+          "columns": [
+            {
+              "expression": "owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "recipes_owner_id_users_id_fk": {
+          "name": "recipes_owner_id_users_id_fk",
+          "tableFrom": "recipes",
+          "columnsFrom": [
+            "owner_id"
+          ],
+          "tableTo": "users",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "recipes_parent_recipe_id_recipes_id_fk": {
+          "name": "recipes_parent_recipe_id_recipes_id_fk",
+          "tableFrom": "recipes",
+          "columnsFrom": [
+            "parent_recipe_id"
+          ],
+          "tableTo": "recipes",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "set null"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "recipes_read": {
+          "name": "recipes_read",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"recipes\".\"owner_id\" is null or \"recipes\".\"owner_id\" = (select auth.uid())"
+        },
+        "recipes_write_own": {
+          "name": "recipes_write_own",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"recipes\".\"owner_id\" = (select auth.uid())",
+          "withCheck": "\"recipes\".\"owner_id\" = (select auth.uid())"
+        }
+      },
+      "checkConstraints": {
+        "recipes_source": {
+          "name": "recipes_source",
+          "value": "\"recipes\".\"source\" in ('user','ai_generated','ai_adapted','imported')"
+        },
+        "recipes_servings": {
+          "name": "recipes_servings",
+          "value": "\"recipes\".\"servings\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.taste_profiles": {
+      "name": "taste_profiles",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "taste_embedding": {
+          "name": "taste_embedding",
+          "type": "vector(1024)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "top_ingredients": {
+          "name": "top_ingredients",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'"
+        },
+        "cuisine_weights": {
+          "name": "cuisine_weights",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "meal_time_patterns": {
+          "name": "meal_time_patterns",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "rebuilt_at": {
+          "name": "rebuilt_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "taste_profiles_user_id_users_id_fk": {
+          "name": "taste_profiles_user_id_users_id_fk",
+          "tableFrom": "taste_profiles",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "tableTo": "users",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "taste_profiles_own": {
+          "name": "taste_profiles_own",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"taste_profiles\".\"user_id\" = (select auth.uid())",
+          "withCheck": "\"taste_profiles\".\"user_id\" = (select auth.uid())"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.user_profiles": {
+      "name": "user_profiles",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "sex": {
+          "name": "sex",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "birth_date": {
+          "name": "birth_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "height_cm": {
+          "name": "height_cm",
+          "type": "numeric(5, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "activity_level": {
+          "name": "activity_level",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "goal": {
+          "name": "goal",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "protein_g_per_kg": {
+          "name": "protein_g_per_kg",
+          "type": "numeric(3, 1)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1.8
+        },
+        "fat_pct_of_kcal": {
+          "name": "fat_pct_of_kcal",
+          "type": "numeric(3, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0.25
+        },
+        "unit_system": {
+          "name": "unit_system",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'metric'"
+        },
+        "timezone": {
+          "name": "timezone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'America/Chicago'"
+        },
+        "onboarded_at": {
+          "name": "onboarded_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "user_profiles_user_id_users_id_fk": {
+          "name": "user_profiles_user_id_users_id_fk",
+          "tableFrom": "user_profiles",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "tableTo": "users",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "user_profiles_own": {
+          "name": "user_profiles_own",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"user_profiles\".\"user_id\" = (select auth.uid())",
+          "withCheck": "\"user_profiles\".\"user_id\" = (select auth.uid())"
+        }
+      },
+      "checkConstraints": {
+        "user_profiles_sex": {
+          "name": "user_profiles_sex",
+          "value": "\"user_profiles\".\"sex\" in ('male','female')"
+        },
+        "user_profiles_activity": {
+          "name": "user_profiles_activity",
+          "value": "\"user_profiles\".\"activity_level\" in ('sedentary','light','moderate','active','very_active')"
+        },
+        "user_profiles_goal": {
+          "name": "user_profiles_goal",
+          "value": "\"user_profiles\".\"goal\" in ('lose','maintain','gain','recomp')"
+        },
+        "user_profiles_units": {
+          "name": "user_profiles_units",
+          "value": "\"user_profiles\".\"unit_system\" in ('metric','imperial')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_demo": {
+          "name": "is_demo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "users_email_unique": {
+          "name": "users_email_unique",
+          "columns": [
+            "email"
+          ],
+          "nullsNotDistinct": false
+        }
+      },
+      "policies": {
+        "users_own": {
+          "name": "users_own",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"users\".\"id\" = (select auth.uid())",
+          "withCheck": "\"users\".\"id\" = (select auth.uid())"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "views": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

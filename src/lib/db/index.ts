@@ -14,7 +14,7 @@ export function getDb(): Db {
   if (!globalForDb.db) {
     // `prepare: false` is required by Supabase's transaction pooler (port 6543).
     const client = postgres(getServerEnv().DATABASE_URL, { prepare: false });
-    globalForDb.db = drizzle(client, { schema });
+    globalForDb.db = drizzle(client, { schema, casing: "snake_case" });
   }
   return globalForDb.db;
 }
