@@ -24,6 +24,8 @@ type HitRow = {
   uses: number | null;
   last_quantity_g: string | number | null;
   last_portion_label: string | null;
+  sim?: number | string | null;
+  full_text?: boolean | null;
 };
 
 function toHit(row: HitRow): FoodHit {
@@ -49,6 +51,14 @@ function toHit(row: HitRow): FoodHit {
           }
         : null,
     uses: row.uses ?? 0,
+    ...(row.sim !== undefined && row.sim !== null
+      ? {
+          match: {
+            similarity: Number(row.sim),
+            fullText: Boolean(row.full_text),
+          },
+        }
+      : {}),
   };
 }
 
@@ -98,11 +108,16 @@ export async function searchFoods(
     ),
     matches as (
       select f.id,
-             ts_rank_cd(f.search_tsv, to_tsquery('english', ${tsq}))
+             0.5 * ts_rank_cd(f.search_tsv, to_tsquery('english', ${tsq}))
              + word_similarity(${q}, f.name)
              + case when lower(f.name) like ${`${first}%`} then 0.3 else 0 end
              + case when f.owner_id is not null then 0.2 else 0 end
-             - length(f.name) * 0.002 as text_score
+             -- Dried and powdered forms are rarely what a short query means.
+             - case when f.name ~* '\\m(dried|dehydrated|powder|powdered|mix)\\M'
+                     and ${q} !~* '(dried|dehydrated|powder|mix)' then 0.25 else 0 end
+             - length(f.name) * 0.006 as text_score,
+             word_similarity(${q}, f.name) as sim,
+             f.search_tsv @@ to_tsquery('english', ${tsq}) as full_text
         from foods f
        where (f.owner_id is null or f.owner_id = ${userId})
          and (f.search_tsv @@ to_tsquery('english', ${tsq})
@@ -112,6 +127,8 @@ export async function searchFoods(
     )
     select ${hitColumns},
            u.uses,
+           m.sim,
+           m.full_text,
            m.text_score + case when u.uses is null then 0
                                else 1 + least(u.uses, 20) * 0.05 end as score
       from matches m
