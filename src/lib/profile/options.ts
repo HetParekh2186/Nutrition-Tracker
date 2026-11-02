@@ -79,12 +79,12 @@ export const DIET_CHOICES: {
   {
     value: "vegetarian",
     label: "Vegetarian",
-    description: "Eggs and dairy, no meat or fish",
+    description: "Dairy, no meat, fish or eggs",
   },
   {
     value: "eggetarian",
     label: "Eggetarian",
-    description: "Eggs, no meat, fish or dairy",
+    description: "Eggs and dairy, no meat or fish",
   },
   { value: "vegan", label: "Vegan", description: "No animal products" },
 ];

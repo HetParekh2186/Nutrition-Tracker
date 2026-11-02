@@ -29,6 +29,7 @@ import { macrosOf } from "@/lib/nutrition/macros";
 import type { NutrientMap } from "@/lib/nutrition/math";
 
 import { recipeNutrition as computeNutrition, scaleQuantity } from "./compute";
+import { withDietTags } from "./diet";
 import type { RecipeDetailDTO, RecipeSource, RecipeSummaryDTO } from "./types";
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
@@ -319,7 +320,10 @@ export async function createRecipe(
         description: input.description ?? null,
         cuisine: input.cuisine ?? null,
         mealTypes: input.mealTypes,
-        tags: input.tags,
+        tags: withDietTags(
+          input.tags,
+          input.ingredients.map((i) => i.displayText),
+        ),
         servings: input.servings,
         prepMinutes: input.prepMinutes ?? null,
         cookMinutes: input.cookMinutes ?? null,
@@ -345,7 +349,10 @@ export async function updateRecipe(
         description: input.description ?? null,
         cuisine: input.cuisine ?? null,
         mealTypes: input.mealTypes,
-        tags: input.tags,
+        tags: withDietTags(
+          input.tags,
+          input.ingredients.map((i) => i.displayText),
+        ),
         servings: input.servings,
         prepMinutes: input.prepMinutes ?? null,
         cookMinutes: input.cookMinutes ?? null,
