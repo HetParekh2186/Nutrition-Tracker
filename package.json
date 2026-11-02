@@ -20,7 +20,8 @@
     "db:seed:nutrients": "tsx scripts/seed-nutrients.ts",
     "import:usda": "tsx scripts/import-usda.ts",
     "demo:user": "tsx scripts/demo-user.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",
@@ -53,6 +54,7 @@
     "@types/node": "^24.19.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^5.0.5",
     "csv-parse": "^7.0.3",
     "drizzle-kit": "^0.31.11",
     "eslint": "^9",
