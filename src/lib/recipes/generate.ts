@@ -10,6 +10,7 @@ import { formatAmount } from "@/lib/nutrition/format";
 import type { Macros } from "@/lib/nutrition/macros";
 import type { NutrientMap } from "@/lib/nutrition/math";
 
+import { expandExclusion, wordStartPattern } from "./allergens";
 import { needsRevision, recipeNutrition } from "./compute";
 
 /** Below this, an ingredient is saved unmatched for the user to fix. */
@@ -65,22 +66,22 @@ export type GenerateResult = {
   offTarget: boolean;
 };
 
-/** Ingredients that hit a "never suggest" rule (whole-word match). */
+/**
+ * Never-suggest rules an ingredient breaks, by rule name. Categories
+ * expand to their foods, so "shellfish" catches shrimp.
+ */
 export function excludedHits(
   draft: GeneratedRecipe,
   excluded: string[],
 ): string[] {
-  const hits = new Set<string>();
-  for (const term of excluded) {
-    const re = new RegExp(
-      `\\b${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`,
-      "i",
-    );
-    for (const ing of draft.ingredients) {
-      if (re.test(ing.display_text) || re.test(ing.food_query)) hits.add(term);
-    }
-  }
-  return [...hits];
+  return excluded.filter((rule) =>
+    expandExclusion(rule).some((word) => {
+      const re = new RegExp(wordStartPattern(word, "js"), "i");
+      return draft.ingredients.some(
+        (ing) => re.test(ing.display_text) || re.test(ing.food_query),
+      );
+    }),
+  );
 }
 
 type Matched = {
