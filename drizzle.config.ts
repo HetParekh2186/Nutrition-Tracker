@@ -16,6 +16,7 @@ export default defineConfig({
   out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: { url: url ?? "" },
+  casing: "snake_case",
   strict: true,
   verbose: true,
 });

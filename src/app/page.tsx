@@ -1,15 +1,14 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/server";
+import { getUserId } from "@/lib/auth/session";
 
-import { signOut } from "./login/actions";
+import { DemoButton } from "./login/demo-button";
 
-// Placeholder home until the Today screen lands in Phase 1.
+// Signed-in users go straight to Today; everyone else sees a short intro.
 export default async function Home() {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims();
-  const email = data?.claims.email;
+  if (await getUserId()) redirect("/today");
 
   return (
     <main className="mx-auto grid min-h-dvh max-w-xl content-center gap-6 px-4">
@@ -18,23 +17,18 @@ export default async function Home() {
           Mise
         </p>
         <h1 className="mt-2 text-2xl">Everything in its place</h1>
+        <p className="mt-3 text-ink-muted">
+          A nutrition tracker built on USDA data that learns what you eat,
+          suggests recipes that fit what is left of your day, and walks you
+          through cooking them.
+        </p>
       </div>
-      {email ? (
-        <div className="flex flex-wrap items-center gap-3">
-          <p className="text-sm text-ink-muted">
-            Signed in as <span className="text-ink">{email}</span>
-          </p>
-          <form action={signOut}>
-            <Button type="submit" variant="outline" size="sm">
-              Sign out
-            </Button>
-          </form>
-        </div>
-      ) : (
-        <Button asChild size="lg" className="w-fit">
+      <div className="grid max-w-xs gap-2">
+        <Button asChild size="lg">
           <Link href="/login">Sign in</Link>
         </Button>
-      )}
+        <DemoButton />
+      </div>
       <Link
         href="/styleguide"
         className="w-fit text-sm text-ink-muted underline underline-offset-4 hover:text-ink"
