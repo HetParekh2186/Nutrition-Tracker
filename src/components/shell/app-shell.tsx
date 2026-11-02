@@ -2,6 +2,7 @@
 
 import {
   CalendarDays,
+  BookOpen,
   ChartColumn,
   LogOut,
   Plus,
@@ -19,6 +20,7 @@ export type NavItem = { href: string; label: string; icon: ReactNode };
 
 export const NAV: NavItem[] = [
   { href: "/today", label: "Today", icon: <CalendarDays aria-hidden /> },
+  { href: "/recipes", label: "Recipes", icon: <BookOpen aria-hidden /> },
   { href: "/insights", label: "Insights", icon: <ChartColumn aria-hidden /> },
   { href: "/settings", label: "Settings", icon: <Settings aria-hidden /> },
 ];

@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Command } from "cmdk";
 import { ArrowLeft, Loader2, Plus, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 import { Drawer } from "vaul";
 
 import { MacroLine } from "@/components/nutrition/macro-chip";
@@ -18,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { keys, useAddEntry, useDeleteEntry } from "@/hooks/use-diary";
+import { keys, useAddEntry } from "@/hooks/use-diary";
 import { DESKTOP, useMediaQuery } from "@/hooks/use-media-query";
 import { api } from "@/lib/client/api";
 import type { MealSlot } from "@/lib/db/enums";
@@ -239,7 +238,6 @@ function AmountStep({
   const { energyEstimated, ...macros } = macrosForGrams(per100g, grams);
 
   const add = useAddEntry();
-  const remove = useDeleteEntry(date);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -248,49 +246,24 @@ function AmountStep({
       return;
     }
     const portionLabel = portionLabelFor(qty, unit);
-    add.mutate(
-      {
-        input: {
-          date,
-          mealSlot: slot,
-          loggedVia,
-          item: {
-            kind: "food",
-            foodId: hit.id,
-            quantityG: grams,
-            portionLabel,
-          },
+    add.mutate({
+      input: {
+        date,
+        mealSlot: slot,
+        loggedVia,
+        item: {
+          kind: "food",
+          foodId: hit.id,
+          quantityG: grams,
+          portionLabel,
         },
-        preview: { name: hit.name, brand: hit.brand, macros },
       },
-      {
-        onSuccess: ({ id }) =>
-          toast.success(`Logged to ${SLOT_LABELS[slot].toLowerCase()}`, {
-            description: hit.name,
-            action: {
-              label: "Undo",
-              onClick: () =>
-                remove.mutate({
-                  id,
-                  entryDate: date,
-                  mealSlot: slot,
-                  kind: "food",
-                  foodId: hit.id,
-                  recipeId: null,
-                  name: hit.name,
-                  brand: hit.brand,
-                  quantityG: grams,
-                  servings: null,
-                  portionLabel,
-                  loggedVia,
-                  createdAt: new Date().toISOString(),
-                  macros,
-                  energyEstimated,
-                }),
-            },
-          }),
+      preview: { name: hit.name, brand: hit.brand, macros },
+      notify: {
+        title: `Logged to ${SLOT_LABELS[slot].toLowerCase()}`,
+        description: hit.name,
       },
-    );
+    });
     onDone();
   }
 
