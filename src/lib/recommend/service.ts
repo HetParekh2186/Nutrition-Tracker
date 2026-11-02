@@ -142,8 +142,15 @@ export async function getRecommendations(
     (r) => (states.get(r.id)?.cookCount ?? 0) >= 2,
   );
 
+  // "Not for me" hides a recipe for two weeks; the skip also teaches taste.
+  const SKIP_DAYS = 14;
+  const eligible = rows.filter((r) => {
+    const skipped = states.get(r.id)?.lastSkippedAt;
+    return !skipped || Date.now() - skipped.getTime() > SKIP_DAYS * 86_400_000;
+  });
+
   // Step 2: score.
-  const scored = rows.map((r) => {
+  const scored = eligible.map((r) => {
     const s = summaryById.get(r.id)!;
     const state = states.get(r.id);
     const daysSince = state?.lastCookedAt
@@ -175,6 +182,11 @@ export async function getRecommendations(
     limit,
   );
 
+  // The taste chip is relative: top quarter of this list's taste scores.
+  const tasteScores = scored.map((s) => s.terms.T).sort((a, b) => b - a);
+  const tasteCutoff =
+    tasteScores[Math.max(0, Math.floor(tasteScores.length / 4) - 1)] ?? 1;
+
   // Step 4: explain.
   const items = ranked.map((s) => {
     const similar = favourites
@@ -190,6 +202,7 @@ export async function getRecommendations(
         .map((c) => c.toLowerCase())
         .includes((s.row.cuisine ?? "").toLowerCase()),
       daysSinceCooked: s.daysSince,
+      strongTaste: tasteVector !== null && s.terms.T >= tasteCutoff,
       rating: s.state?.rating ?? null,
       similarCooked:
         similar && similar.sim > 0.75
@@ -211,9 +224,10 @@ export async function getRecommendations(
   });
 
   if (options.logImpressions !== false) {
+    // SPEC.md measures the save-or-cook rate of the top 5 suggestions.
     await recordImpressions(
       userId,
-      items.map((i) => i.recipe.id),
+      items.slice(0, 5).map((i) => i.recipe.id),
     );
   }
   return { slot, date, budget, personalized: tasteVector !== null, items };

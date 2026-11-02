@@ -3,6 +3,8 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
+  Bookmark,
+  BookmarkCheck,
   Clock,
   Minus,
   Pencil,
@@ -14,7 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { SlotPicker } from "@/components/log/slot-picker";
@@ -22,6 +24,7 @@ import { useQuickLog } from "@/components/log/quick-log-provider";
 import { MacroChip } from "@/components/nutrition/macro-chip";
 import { NutrientBars } from "@/components/nutrition/nutrient-bars";
 import { totalMinutes } from "@/components/recipes/recipe-card";
+import { RatingStars } from "@/components/recipes/rating-stars";
 import { TypographicCover } from "@/components/recipes/typographic-cover";
 import { Button } from "@/components/ui/button";
 import {
@@ -301,6 +304,19 @@ export function RecipeView({
     },
     onError: (err) => toast.error(err.message),
   });
+  const [saved, setSaved] = useState(initial.saved);
+  const [rating, setRating] = useState(initial.myRating);
+  const interact = useMutation({
+    mutationFn: (input: Parameters<typeof api.interact>[1]) =>
+      api.interact(initial.id, input),
+    onError: (err) => toast.error(err.message),
+  });
+  // A view is a weak signal, recorded once per visit.
+  const { mutate: recordView } = interact;
+  useEffect(() => {
+    recordView({ event: "view" });
+  }, [recordView]);
+
   const minutes = totalMinutes(recipe);
   const groups = [
     ...new Set(recipe.ingredients.map((i) => i.groupLabel ?? "")),
@@ -362,6 +378,17 @@ export function RecipeView({
             <Utensils aria-hidden />
             Log as eaten
           </Button>
+          <Button
+            variant="outline"
+            aria-pressed={saved}
+            onClick={() => {
+              setSaved(!saved);
+              interact.mutate({ event: saved ? "unsave" : "save" });
+            }}
+          >
+            {saved ? <BookmarkCheck aria-hidden /> : <Bookmark aria-hidden />}
+            {saved ? "Saved" : "Save"}
+          </Button>
           {aiEnabled ? (
             <Button variant="outline" onClick={() => setDialog("adapt")}>
               <Sparkles aria-hidden />
@@ -387,6 +414,27 @@ export function RecipeView({
                 Delete
               </Button>
             </>
+          ) : null}
+        </div>
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+          <RatingStars
+            value={rating}
+            onChange={(n) => {
+              setRating(n);
+              interact.mutate(
+                { event: "rate", rating: n },
+                {
+                  onSuccess: () =>
+                    toast.success("Thanks, suggestions will use this"),
+                },
+              );
+            }}
+          />
+          {recipe.cookCount > 0 ? (
+            <span className="text-sm text-ink-muted">
+              You have made this{" "}
+              {recipe.cookCount === 1 ? "once" : `${recipe.cookCount} times`}
+            </span>
           ) : null}
         </div>
       </header>

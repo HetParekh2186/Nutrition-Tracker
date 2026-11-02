@@ -54,4 +54,7 @@ export type RecipeDetailDTO = RecipeSummaryDTO & {
   ingredients: RecipeIngredientDTO[];
   steps: RecipeStepDTO[];
   createdAt: string;
+  saved: boolean;
+  myRating: number | null;
+  cookCount: number;
 };

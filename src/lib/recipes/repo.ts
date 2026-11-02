@@ -31,6 +31,7 @@ import type { NutrientMap } from "@/lib/nutrition/math";
 import { recipeNutrition as computeNutrition, scaleQuantity } from "./compute";
 import { withDietTags } from "./diet";
 import { embedRecipes } from "@/lib/recommend/embed-repo";
+import { recipeStates } from "@/lib/recommend/interactions";
 import type { RecipeDetailDTO, RecipeSource, RecipeSummaryDTO } from "./types";
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
@@ -188,6 +189,7 @@ export async function getRecipe(
       : null,
   ]);
   const nutrition = (await cachedNutrition([id])).get(id) ?? {};
+  const state = (await recipeStates(userId, [id])).get(id);
   const servings = viewServings ?? row.servings;
   const unmatched = summary?.unmatched ?? 0;
 
@@ -225,6 +227,9 @@ export async function getRecipe(
       ingredientIds: s.ingredientIds,
     })),
     createdAt: row.createdAt.toISOString(),
+    saved: state?.saved ?? false,
+    myRating: state?.rating ?? null,
+    cookCount: state?.cookCount ?? 0,
   };
 }
 

@@ -17,6 +17,11 @@ export type ExplainContext = {
   rating: number | null;
   /** The most similar recipe you have cooked more than once, if any. */
   similarCooked: { title: string; count: number } | null;
+  /**
+   * Whether taste similarity stands out among this list's candidates.
+   * Defaults to an absolute threshold when not given.
+   */
+  strongTaste?: boolean;
 };
 
 const MIN_CONTRIBUTION = 0.05;
@@ -48,7 +53,7 @@ function reasonFor(
       return `Fits your remaining ${ctx.slot} macros`;
     }
     case "T":
-      if (t.T < 0.6) return null;
+      if (!(ctx.strongTaste ?? t.T >= 0.6)) return null;
       return ctx.similarCooked && ctx.similarCooked.count >= 2
         ? `Like the ${ctx.similarCooked.title.toLowerCase()} you cooked ${
             ctx.similarCooked.count === 2

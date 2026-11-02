@@ -6,6 +6,12 @@ import { cosine } from "@/lib/embeddings/hash";
 
 export const MMR_LAMBDA = 0.7;
 export const MMR_POOL = 30;
+/**
+ * Similarity floor for two dishes of the same cuisine, so variety holds even
+ * with weak embeddings. 0.7 buried strong matches; 0.4 still spreads
+ * cuisines but lets score decide close calls.
+ */
+export const SAME_CUISINE_SIMILARITY = 0.4;
 
 export type Rankable = {
   id: string;
@@ -21,7 +27,7 @@ export function similarity(a: Rankable, b: Rankable): number {
     a.cuisine &&
     b.cuisine &&
     a.cuisine.toLowerCase() === b.cuisine.toLowerCase();
-  return Math.max(cos, sameCuisine ? 0.7 : 0);
+  return Math.max(cos, sameCuisine ? SAME_CUISINE_SIMILARITY : 0);
 }
 
 export function mmr<T extends Rankable>(

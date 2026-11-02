@@ -7,6 +7,7 @@ import {
   LogOut,
   Plus,
   Settings,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -20,6 +21,7 @@ export type NavItem = { href: string; label: string; icon: ReactNode };
 
 export const NAV: NavItem[] = [
   { href: "/today", label: "Today", icon: <CalendarDays aria-hidden /> },
+  { href: "/for-you", label: "For You", icon: <Sparkles aria-hidden /> },
   { href: "/recipes", label: "Recipes", icon: <BookOpen aria-hidden /> },
   { href: "/insights", label: "Insights", icon: <ChartColumn aria-hidden /> },
   { href: "/settings", label: "Settings", icon: <Settings aria-hidden /> },

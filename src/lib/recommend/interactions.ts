@@ -39,6 +39,7 @@ export type RecipeUserState = {
   rating: number | null;
   cookCount: number;
   lastCookedAt: Date | null;
+  lastSkippedAt: Date | null;
 };
 
 /**
@@ -73,6 +74,7 @@ export async function recipeStates(
       rating: null,
       cookCount: 0,
       lastCookedAt: null,
+      lastSkippedAt: null,
     });
   }
   const savedDecided = new Set<string>();
@@ -86,6 +88,7 @@ export async function recipeStates(
       savedDecided.add(r.recipeId);
     }
     if (r.event === "rate" && s.rating === null) s.rating = r.rating;
+    if (r.event === "skip" && !s.lastSkippedAt) s.lastSkippedAt = r.createdAt;
     if (r.event === "cook_complete" || r.event === "log") {
       s.cookCount += 1;
       if (!s.lastCookedAt || r.createdAt > s.lastCookedAt)

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Copy } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
 
@@ -96,6 +96,19 @@ export function TodayView({
           target={s.target}
           remaining={s.remaining}
         />
+        {date === today ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <Button asChild variant="outline">
+              <Link href="/for-you?slot=dinner">
+                <Sparkles aria-hidden />
+                Suggest dinner
+              </Link>
+            </Button>
+            <span className="text-xs text-ink-muted">
+              Recipes that fit what you have left today.
+            </span>
+          </div>
+        ) : null}
         <p className="text-xs text-ink-muted">
           {s.targetsAreDefaults
             ? "Using standard targets until you set up your profile."
