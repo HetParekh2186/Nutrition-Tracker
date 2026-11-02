@@ -57,6 +57,19 @@ export async function sendMagicLink(
   return { status: "sent", email: parsed.data.email };
 }
 
+/**
+ * One-click sign-in to the shared demo account. The password lives only in
+ * server env vars; the demo's data is reset by pnpm seed:demo.
+ */
+export async function signInAsDemo() {
+  const email = process.env.DEMO_EMAIL;
+  const password = process.env.DEMO_PASSWORD;
+  if (!email || !password) redirect("/login?error=demo");
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  redirect(error ? "/login?error=demo" : "/today");
+}
+
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
