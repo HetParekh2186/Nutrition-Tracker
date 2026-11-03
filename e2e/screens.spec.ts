@@ -139,3 +139,25 @@ test("for you and meal picks", async ({ page }, info) => {
     });
   }
 });
+
+test("cook mode", async ({ page }, info) => {
+  await signInAsDemo(page);
+  await page.goto("/recipes");
+  await page.getByRole("link", { name: "Open Chicken tikka masala" }).click();
+  await page.getByRole("button", { name: "Start cooking" }).click();
+  await expect(page).toHaveURL(/\/cook\//);
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowRight");
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.waitForTimeout(700);
+    await page.screenshot({
+      path: `${DIR}/cook-${info.project.name}-${scheme}.png`,
+    });
+  }
+  await page.getByRole("button", { name: "Ask the cooking assistant" }).click();
+  await page.waitForTimeout(700);
+  await page.screenshot({
+    path: `${DIR}/cook-assistant-${info.project.name}.png`,
+  });
+});
