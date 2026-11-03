@@ -18,7 +18,9 @@ test("log a food from search, then delete it", async ({ page, isMobile }) => {
   const amount = page.getByLabel("Amount");
   await page.getByLabel("Unit").selectOption({ label: "1 large (50 g)" });
   await amount.fill("2");
-  await page.getByRole("radio", { name: "Snacks" }).check();
+  // Click the visible label, as a user does; the radio itself is visually hidden.
+  await page.getByRole("dialog").getByText("Snacks", { exact: true }).click();
+  await expect(page.getByRole("radio", { name: "Snacks" })).toBeChecked();
   await expect(page.getByText("100 g", { exact: true })).toBeVisible();
   await amount.press("Enter");
 
