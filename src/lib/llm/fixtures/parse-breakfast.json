@@ -1,0 +1,34 @@
+{
+  "items": [
+    {
+      "text": "2 eggs",
+      "food_query": "egg, whole, raw",
+      "quantity": 2,
+      "unit": "large"
+    },
+    {
+      "text": "a slice of sourdough toast",
+      "food_query": "bread, sourdough, toasted",
+      "quantity": 1,
+      "unit": "slice"
+    },
+    {
+      "text": "with butter",
+      "food_query": "butter, salted",
+      "quantity": 1,
+      "unit": "tsp"
+    },
+    {
+      "text": "a banana",
+      "food_query": "banana, raw",
+      "quantity": 1,
+      "unit": "medium"
+    },
+    {
+      "text": "black coffee",
+      "food_query": "coffee, brewed",
+      "quantity": 1,
+      "unit": "cup"
+    }
+  ]
+}

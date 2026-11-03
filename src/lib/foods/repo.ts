@@ -228,6 +228,29 @@ export async function getFood(
   };
 }
 
+/** Portions for several foods in one query, keyed by food id. */
+export async function portionsFor(
+  foodIds: number[],
+): Promise<Map<number, { label: string; grams: number }[]>> {
+  const out = new Map<number, { label: string; grams: number }[]>();
+  if (foodIds.length === 0) return out;
+  const rows = await getDb()
+    .select({
+      foodId: foodPortions.foodId,
+      label: foodPortions.label,
+      grams: foodPortions.grams,
+    })
+    .from(foodPortions)
+    .where(inArray(foodPortions.foodId, foodIds))
+    .orderBy(asc(foodPortions.id));
+  for (const r of rows) {
+    const list = out.get(r.foodId) ?? [];
+    list.push({ label: r.label, grams: r.grams });
+    out.set(r.foodId, list);
+  }
+  return out;
+}
+
 export type CustomFoodInput = {
   name: string;
   brand?: string | undefined;

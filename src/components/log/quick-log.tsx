@@ -2,7 +2,13 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Command } from "cmdk";
-import { ArrowLeft, Loader2, Plus, Search } from "lucide-react";
+import {
+  ArrowLeft,
+  Loader2,
+  MessageSquareText,
+  Plus,
+  Search,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Drawer } from "vaul";
 
@@ -22,6 +28,7 @@ import { DESKTOP, useMediaQuery } from "@/hooks/use-media-query";
 import { api } from "@/lib/client/api";
 import type { MealSlot } from "@/lib/db/enums";
 import { SLOT_LABELS } from "@/lib/diary/slots";
+import { cn } from "@/lib/utils";
 import { defaultAmount, macrosForGrams } from "@/lib/foods/preview";
 import type { FoodHit } from "@/lib/foods/types";
 import {
@@ -33,6 +40,7 @@ import {
 } from "@/lib/foods/units";
 
 import { CustomFoodForm } from "./custom-food-form";
+import { DescribeStep } from "./describe-step";
 import { SlotPicker } from "./slot-picker";
 
 const SOURCE_LABEL: Record<FoodHit["source"], string> = {
@@ -55,7 +63,8 @@ function useDebounced<T>(value: T, ms: number): T {
 type Step =
   | { kind: "search" }
   | { kind: "amount"; hit: FoodHit; loggedVia: "search" | "recent" }
-  | { kind: "custom" };
+  | { kind: "custom" }
+  | { kind: "describe"; text: string };
 
 function FoodRow({ hit }: { hit: FoodHit }) {
   const preview = defaultAmount(hit);
@@ -75,12 +84,21 @@ function FoodRow({ hit }: { hit: FoodHit }) {
   );
 }
 
+/** Looks like a sentence rather than a food name: "2 eggs and toast". */
+function looksDescribed(q: string): boolean {
+  return (
+    /\d/.test(q) || /\b(and|with)\b|,/.test(q) || q.split(/\s+/).length >= 4
+  );
+}
+
 function SearchStep({
   onPick,
   onCustom,
+  onDescribe,
 }: {
   onPick: (hit: FoodHit, via: "search" | "recent") => void;
   onCustom: () => void;
+  onDescribe: (text: string) => void;
 }) {
   const [query, setQuery] = useState("");
   const q = useDebounced(query.trim(), 120);
@@ -169,6 +187,23 @@ function SearchStep({
           ) : null,
         )}
         <Command.Group>
+          <Command.Item
+            value="describe-meal"
+            onSelect={() => onDescribe(query.trim())}
+            className={cn(
+              "flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-ink-muted data-[selected=true]:bg-surface-2 data-[selected=true]:text-ink",
+              q && looksDescribed(q) && "text-ink",
+            )}
+          >
+            <MessageSquareText aria-hidden className="size-4" />
+            {q && looksDescribed(q) ? (
+              <span className="min-w-0 truncate">
+                Log &ldquo;{q}&rdquo; in plain English
+              </span>
+            ) : (
+              "Describe a meal in plain English"
+            )}
+          </Command.Item>
           <Command.Item
             value="create-custom-food"
             onSelect={onCustom}
@@ -370,6 +405,17 @@ function Panel({
       />
     );
   }
+  if (step.kind === "describe") {
+    return (
+      <DescribeStep
+        initialText={step.text}
+        date={date}
+        initialSlot={initialSlot}
+        onBack={() => setStep({ kind: "search" })}
+        onDone={onDone}
+      />
+    );
+  }
   if (step.kind === "custom") {
     return (
       <CustomFoodForm
@@ -384,6 +430,7 @@ function Panel({
     <SearchStep
       onPick={(hit, loggedVia) => setStep({ kind: "amount", hit, loggedVia })}
       onCustom={() => setStep({ kind: "custom" })}
+      onDescribe={(text) => setStep({ kind: "describe", text })}
     />
   );
 }

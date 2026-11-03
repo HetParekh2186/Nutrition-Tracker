@@ -220,6 +220,10 @@ export const RecipeViewQuery = z.object({
   servings: z.coerce.number().positive().max(50).optional(),
 });
 
+export const LogParseRequest = z.object({
+  text: z.string().trim().min(2).max(1000),
+});
+
 export const GenerateRequest = z.object({
   request: z.string().trim().min(3).max(500),
   slot: MealSlotSchema.optional(),
