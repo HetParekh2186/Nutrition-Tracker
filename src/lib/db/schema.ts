@@ -556,6 +556,8 @@ export type Substitution = {
   newFoodId: number;
   quantityG: number;
   reason: string;
+  newFoodName?: string | undefined;
+  displayText?: string | undefined;
 };
 
 export const cookSessions = pgTable(
