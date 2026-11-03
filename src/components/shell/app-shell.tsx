@@ -14,6 +14,11 @@ import { usePathname } from "next/navigation";
 import { useSyncExternalStore, type ReactNode } from "react";
 
 import { useQuickLog } from "@/components/log/quick-log-provider";
+import {
+  clearOfflineData,
+  OfflineNotice,
+  RegisterServiceWorker,
+} from "@/components/pwa/pwa";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -85,6 +90,8 @@ export function AppShell({
       >
         Skip to content
       </a>
+      <RegisterServiceWorker />
+      <OfflineNotice />
       <header className="sticky top-0 z-30 border-b border-border bg-bg">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4 sm:px-6">
           <Link href="/today" className="font-display text-xl tracking-tight">
@@ -109,7 +116,7 @@ export function AppShell({
           </nav>
           <div className="ml-auto flex items-center gap-2">
             <LogButton />
-            <form action={signOut}>
+            <form action={signOut} onSubmit={clearOfflineData}>
               <Button
                 type="submit"
                 variant="ghost"
