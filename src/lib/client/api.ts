@@ -16,7 +16,7 @@ import type {
   TargetsUpdateInput,
 } from "@/lib/api/schemas";
 import type { DaySummaryDTO, DiaryDayDTO } from "@/lib/diary/types";
-import type { FoodDetail, FoodSearchResult } from "@/lib/foods/types";
+import type { FoodDetail, FoodHit, FoodSearchResult } from "@/lib/foods/types";
 import type { RangeSummaryDTO, SourcesDTO } from "@/lib/insights/types";
 import type { RecipeDetailDTO, RecipeSummaryDTO } from "@/lib/recipes/types";
 import type { RecommendationsDTO } from "@/lib/recommend/types";
@@ -142,6 +142,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify(input),
     }),
+  barcode: (code: string) =>
+    request<FoodHit>(`/api/foods/barcode/${encodeURIComponent(code)}`),
   parseLog: (text: string) =>
     request<{ items: ParsedLogItem[] }>("/api/log/parse", {
       method: "POST",

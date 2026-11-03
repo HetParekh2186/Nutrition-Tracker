@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   Loader2,
   MessageSquareText,
+  ScanBarcode,
   Plus,
   Search,
 } from "lucide-react";
@@ -39,6 +40,7 @@ import {
   type PortionOption,
 } from "@/lib/foods/units";
 
+import { BarcodeStep } from "./barcode-step";
 import { CustomFoodForm } from "./custom-food-form";
 import { DescribeStep } from "./describe-step";
 import { SlotPicker } from "./slot-picker";
@@ -64,7 +66,8 @@ type Step =
   | { kind: "search" }
   | { kind: "amount"; hit: FoodHit; loggedVia: "search" | "recent" }
   | { kind: "custom" }
-  | { kind: "describe"; text: string };
+  | { kind: "describe"; text: string }
+  | { kind: "barcode"; code: string };
 
 function FoodRow({ hit }: { hit: FoodHit }) {
   const preview = defaultAmount(hit);
@@ -95,10 +98,12 @@ function SearchStep({
   onPick,
   onCustom,
   onDescribe,
+  onBarcode,
 }: {
   onPick: (hit: FoodHit, via: "search" | "recent") => void;
   onCustom: () => void;
   onDescribe: (text: string) => void;
+  onBarcode: (code: string) => void;
 }) {
   const [query, setQuery] = useState("");
   const q = useDebounced(query.trim(), 120);
@@ -109,6 +114,7 @@ function SearchStep({
     staleTime: 30_000,
   });
   const showingStale = data?.query !== q;
+  const isBarcode = /^\d{8,14}$/.test(q.replace(/[\s-]/g, ""));
 
   const groups: {
     heading: string;
@@ -192,17 +198,28 @@ function SearchStep({
             onSelect={() => onDescribe(query.trim())}
             className={cn(
               "flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-ink-muted data-[selected=true]:bg-surface-2 data-[selected=true]:text-ink",
-              q && looksDescribed(q) && "text-ink",
+              q && !isBarcode && looksDescribed(q) && "text-ink",
             )}
           >
             <MessageSquareText aria-hidden className="size-4" />
-            {q && looksDescribed(q) ? (
+            {q && !isBarcode && looksDescribed(q) ? (
               <span className="min-w-0 truncate">
                 Log &ldquo;{q}&rdquo; in plain English
               </span>
             ) : (
               "Describe a meal in plain English"
             )}
+          </Command.Item>
+          <Command.Item
+            value="barcode"
+            onSelect={() => onBarcode(isBarcode ? q : "")}
+            className={cn(
+              "flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-ink-muted data-[selected=true]:bg-surface-2 data-[selected=true]:text-ink",
+              isBarcode && "text-ink",
+            )}
+          >
+            <ScanBarcode aria-hidden className="size-4" />
+            {isBarcode ? `Look up barcode ${q}` : "Look up a barcode"}
           </Command.Item>
           <Command.Item
             value="create-custom-food"
@@ -416,6 +433,15 @@ function Panel({
       />
     );
   }
+  if (step.kind === "barcode") {
+    return (
+      <BarcodeStep
+        initialCode={step.code}
+        onBack={() => setStep({ kind: "search" })}
+        onFound={(hit) => setStep({ kind: "amount", hit, loggedVia: "search" })}
+      />
+    );
+  }
   if (step.kind === "custom") {
     return (
       <CustomFoodForm
@@ -431,6 +457,7 @@ function Panel({
       onPick={(hit, loggedVia) => setStep({ kind: "amount", hit, loggedVia })}
       onCustom={() => setStep({ kind: "custom" })}
       onDescribe={(text) => setStep({ kind: "describe", text })}
+      onBarcode={(code) => setStep({ kind: "barcode", code })}
     />
   );
 }
