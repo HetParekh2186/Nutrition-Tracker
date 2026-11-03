@@ -142,12 +142,14 @@ export function DescribeStep({
   initialText,
   date,
   initialSlot,
+  openedAt,
   onBack,
   onDone,
 }: {
   initialText: string;
   date: string;
   initialSlot: MealSlot;
+  openedAt: number;
   onBack: () => void;
   onDone: () => void;
 }) {
@@ -185,7 +187,9 @@ export function DescribeStep({
   async function logAll() {
     setSaving(true);
     try {
-      for (const r of chosen) {
+      // The whole meal counts as one log action.
+      const logMs = openedAt ? Date.now() - openedAt : undefined;
+      for (const [i, r] of chosen.entries()) {
         const c = r.item.candidates[r.pick]!;
         const grams = rowGrams(r);
         const { energyEstimated: _e, ...macros } = macrosForGrams(
@@ -197,6 +201,7 @@ export function DescribeStep({
             date,
             mealSlot: slot,
             loggedVia: "natural_language",
+            ...(i === 0 && logMs !== undefined ? { logMs } : {}),
             item: {
               kind: "food",
               foodId: c.food.id,

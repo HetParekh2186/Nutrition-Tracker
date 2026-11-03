@@ -4,7 +4,8 @@ import { expect, type Page } from "@playwright/test";
 export async function signInAsDemo(page: Page) {
   await page.goto("/login");
   await page.getByRole("button", { name: "Try the demo account" }).click();
-  await expect(page).toHaveURL(/\/today/);
+  // The first sign-in after a server start compiles several routes.
+  await expect(page).toHaveURL(/\/today/, { timeout: 20_000 });
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 }
 

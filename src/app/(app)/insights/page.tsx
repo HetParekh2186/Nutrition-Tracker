@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { getUserId } from "@/lib/auth/session";
-import { getRangeSummary, getSuggestionStats } from "@/lib/insights/repo";
+import {
+  getImpact,
+  getRangeSummary,
+  getSuggestionStats,
+} from "@/lib/insights/repo";
 import { addDays, localDate } from "@/lib/nutrition/dates";
 import { getProfile } from "@/lib/profile/repo";
 
@@ -28,10 +32,11 @@ export default async function InsightsPage({
   const from = addDays(to, -(range - 1));
   const weekFrom = addDays(to, -6);
 
-  const [summary, week, suggestions] = await Promise.all([
+  const [summary, week, suggestions, impact] = await Promise.all([
     getRangeSummary(userId, from, to),
     range === 7 ? null : getRangeSummary(userId, weekFrom, to),
     getSuggestionStats(userId, 4),
+    getImpact(userId, from, to),
   ]);
 
   return (
@@ -40,6 +45,7 @@ export default async function InsightsPage({
       summary={summary}
       week={week ?? summary}
       suggestions={suggestions}
+      impact={impact}
     />
   );
 }

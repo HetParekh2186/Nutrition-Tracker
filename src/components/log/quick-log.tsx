@@ -240,6 +240,7 @@ function AmountStep({
   loggedVia,
   date,
   initialSlot,
+  openedAt,
   onBack,
   onDone,
 }: {
@@ -247,6 +248,7 @@ function AmountStep({
   loggedVia: "search" | "recent";
   date: string;
   initialSlot: MealSlot;
+  openedAt: number;
   onBack: () => void;
   onDone: () => void;
 }) {
@@ -303,6 +305,7 @@ function AmountStep({
         date,
         mealSlot: slot,
         loggedVia,
+        ...(openedAt ? { logMs: Date.now() - openedAt } : {}),
         item: {
           kind: "food",
           foodId: hit.id,
@@ -402,10 +405,13 @@ function AmountStep({
 function Panel({
   date,
   initialSlot,
+  openedAt,
   onDone,
 }: {
   date: string;
   initialSlot: MealSlot;
+  /** Epoch ms the palette opened, to measure how long logging takes. */
+  openedAt: number;
   onDone: () => void;
 }) {
   const [step, setStep] = useState<Step>({ kind: "search" });
@@ -417,6 +423,7 @@ function Panel({
         loggedVia={step.loggedVia}
         date={date}
         initialSlot={initialSlot}
+        openedAt={openedAt}
         onBack={() => setStep({ kind: "search" })}
         onDone={onDone}
       />
@@ -428,6 +435,7 @@ function Panel({
         initialText={step.text}
         date={date}
         initialSlot={initialSlot}
+        openedAt={openedAt}
         onBack={() => setStep({ kind: "search" })}
         onDone={onDone}
       />
@@ -480,13 +488,22 @@ export function QuickLog({
   const desktop = useMediaQuery(DESKTOP);
   // Fresh state each time the palette opens.
   const [session, setSession] = useState(0);
+  const [openedAt, setOpenedAt] = useState(0);
   useEffect(() => {
-    if (open) setSession((s) => s + 1);
+    if (!open) return;
+    setSession((s) => s + 1);
+    setOpenedAt(Date.now());
   }, [open]);
   const slot = initialSlot ?? defaultSlotForHour(new Date().getHours());
   const close = () => onOpenChange(false);
   const panel = (
-    <Panel key={session} date={date} initialSlot={slot} onDone={close} />
+    <Panel
+      key={session}
+      date={date}
+      initialSlot={slot}
+      openedAt={openedAt}
+      onDone={close}
+    />
   );
 
   if (desktop) {

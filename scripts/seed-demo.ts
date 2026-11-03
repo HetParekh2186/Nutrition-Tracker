@@ -315,6 +315,11 @@ async function main() {
               quantity_g: item.fixed ? item.grams : grams,
               portion_label: item.fixed ? (item.portion ?? null) : null,
               logged_via: via,
+              // Quick Log timing: a tap on a recent food is quicker than
+              // a search.
+              log_ms: Math.round(
+                via === "recent" ? 3500 + rand() * 5000 : 7000 + rand() * 11000,
+              ),
               created_at: chicagoInstant(
                 date,
                 hour,

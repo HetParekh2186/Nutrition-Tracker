@@ -5,7 +5,7 @@ import { loadEntries, targetsFor } from "@/lib/diary/repo";
 import { N, NUTRIENT_BY_ID, NUTRIENTS } from "@/lib/nutrition/catalog";
 import { summarizeRange, topSources } from "@/lib/nutrition/range";
 
-import type { RangeSummaryDTO, SourcesDTO } from "./types";
+import type { ImpactDTO, RangeSummaryDTO, SourcesDTO } from "./types";
 
 export async function getRangeSummary(
   userId: string,
@@ -136,5 +136,63 @@ export async function getSuggestionStats(
     shown,
     acted,
     rate: shown ? acted / shown : null,
+  };
+}
+
+/**
+ * The numbers behind the README's Impact section (SPEC.md "README
+ * requirements"), over a date range in the user's timezone.
+ */
+export async function getImpact(
+  userId: string,
+  from: string,
+  to: string,
+): Promise<ImpactDTO> {
+  const db = getDb();
+  const [timing, dinners, via] = await Promise.all([
+    db.execute<{ median_ms: number | null; n: number }>(sql`
+      select percentile_cont(0.5) within group (order by log_ms)::float8 as median_ms,
+             count(log_ms)::int as n
+        from diary_entries
+       where user_id = ${userId}
+         and entry_date between ${from} and ${to}
+         and log_ms is not null
+    `),
+    db.execute<{ days: number; from_mise: number }>(sql`
+      select count(distinct d.entry_date)::int as days,
+             count(distinct d.entry_date) filter (where exists (
+               select 1 from recipe_interactions i
+                where i.user_id = d.user_id
+                  and i.recipe_id = d.recipe_id
+                  and i.event = 'impression'
+                  and i.created_at <= d.created_at
+             ))::int as from_mise
+        from diary_entries d
+       where d.user_id = ${userId}
+         and d.meal_slot = 'dinner'
+         and d.entry_date between ${from} and ${to}
+    `),
+    db.execute<{ via: string; count: number }>(sql`
+      select logged_via as via, count(*)::int as count
+        from diary_entries
+       where user_id = ${userId}
+         and entry_date between ${from} and ${to}
+       group by logged_via
+       order by count desc
+    `),
+  ]);
+  const t = timing[0];
+  const d = dinners[0];
+  return {
+    from,
+    to,
+    medianLogSeconds:
+      t?.median_ms === null || t?.median_ms === undefined
+        ? null
+        : t.median_ms / 1000,
+    timedLogs: t?.n ?? 0,
+    dinnerDays: d?.days ?? 0,
+    dinnerDaysFromMise: d?.from_mise ?? 0,
+    loggedVia: via.map((r) => ({ via: r.via, count: r.count })),
   };
 }

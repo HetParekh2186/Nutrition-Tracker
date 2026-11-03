@@ -24,6 +24,8 @@ export const NewDiaryEntry = z.object({
   loggedVia: z
     .enum(["search", "natural_language", "recent", "recipe"])
     .default("search"),
+  /** Milliseconds from opening Quick Log to this entry. */
+  logMs: z.number().int().min(0).max(600_000).optional(),
   item: z.discriminatedUnion("kind", [
     z.object({
       kind: z.literal("food"),
