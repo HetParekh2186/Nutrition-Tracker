@@ -39,7 +39,7 @@ export const metadata: Metadata = {
 
 export default function StyleguidePage() {
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-8 sm:py-16">
+    <main className="mx-auto max-w-5xl px-4 py-10 sm:px-8 sm:py-16">
       <header className="flex flex-col gap-6 border-b border-border pb-10 sm:flex-row sm:items-end sm:justify-between">
         <div className="max-w-xl">
           <p className="num text-xs tracking-widest text-ink-muted uppercase">
@@ -191,7 +191,7 @@ export default function StyleguidePage() {
           </Card>
         </div>
       </Section>
-    </div>
+    </main>
   );
 }
 

@@ -36,3 +36,28 @@ test("log a food from search, then delete it", async ({ page, isMobile }) => {
   await page.getByRole("button", { name: "Delete" }).click();
   await expect(slot.getByRole("listitem")).toHaveCount(before);
 });
+
+test("look up a packaged food by barcode", async ({ page, isMobile }) => {
+  await signInAsDemo(page);
+  await page.goto("/today");
+  await openQuickLog(page, isMobile);
+  await page.getByPlaceholder(/Search foods/).fill("3017620422003");
+  await page.getByText("Look up barcode 3017620422003").click();
+  await page.getByRole("button", { name: "Look up" }).click();
+
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByText("Nutella", { exact: true })).toBeVisible();
+  await expect(dialog.getByText(/^OFF/)).toBeVisible();
+  await dialog.getByLabel("Amount").fill("15");
+  await dialog.getByLabel("Unit").selectOption("g");
+  await dialog.getByText("Snacks", { exact: true }).click();
+  await dialog.getByRole("button", { name: /Log to snacks/ }).click();
+
+  const entry = page
+    .getByRole("region", { name: "Snacks" })
+    .getByRole("button", { name: /Nutella/ })
+    .last();
+  await expect(entry).toContainText("15 g");
+  await entry.click();
+  await page.getByRole("button", { name: "Delete" }).click();
+});

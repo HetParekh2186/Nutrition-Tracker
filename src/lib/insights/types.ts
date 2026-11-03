@@ -24,3 +24,16 @@ export type SourcesDTO = {
   loggedDays: number;
   sources: (Source & { dailyAverage: number })[];
 };
+
+export type ImpactDTO = {
+  from: string;
+  to: string;
+  /** Median seconds from opening Quick Log to logging; null before any. */
+  medianLogSeconds: number | null;
+  timedLogs: number;
+  /** Days with a dinner logged, and those where it was a suggested recipe. */
+  dinnerDays: number;
+  dinnerDaysFromMise: number;
+  /** Entries by how they were logged, most used first. */
+  loggedVia: { via: string; count: number }[];
+};

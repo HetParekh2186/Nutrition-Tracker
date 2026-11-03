@@ -2,7 +2,14 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Command } from "cmdk";
-import { ArrowLeft, Loader2, Plus, Search } from "lucide-react";
+import {
+  ArrowLeft,
+  Loader2,
+  MessageSquareText,
+  ScanBarcode,
+  Plus,
+  Search,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Drawer } from "vaul";
 
@@ -22,6 +29,7 @@ import { DESKTOP, useMediaQuery } from "@/hooks/use-media-query";
 import { api } from "@/lib/client/api";
 import type { MealSlot } from "@/lib/db/enums";
 import { SLOT_LABELS } from "@/lib/diary/slots";
+import { cn } from "@/lib/utils";
 import { defaultAmount, macrosForGrams } from "@/lib/foods/preview";
 import type { FoodHit } from "@/lib/foods/types";
 import {
@@ -32,7 +40,9 @@ import {
   type PortionOption,
 } from "@/lib/foods/units";
 
+import { BarcodeStep } from "./barcode-step";
 import { CustomFoodForm } from "./custom-food-form";
+import { DescribeStep } from "./describe-step";
 import { SlotPicker } from "./slot-picker";
 
 const SOURCE_LABEL: Record<FoodHit["source"], string> = {
@@ -55,7 +65,9 @@ function useDebounced<T>(value: T, ms: number): T {
 type Step =
   | { kind: "search" }
   | { kind: "amount"; hit: FoodHit; loggedVia: "search" | "recent" }
-  | { kind: "custom" };
+  | { kind: "custom" }
+  | { kind: "describe"; text: string }
+  | { kind: "barcode"; code: string };
 
 function FoodRow({ hit }: { hit: FoodHit }) {
   const preview = defaultAmount(hit);
@@ -75,12 +87,23 @@ function FoodRow({ hit }: { hit: FoodHit }) {
   );
 }
 
+/** Looks like a sentence rather than a food name: "2 eggs and toast". */
+function looksDescribed(q: string): boolean {
+  return (
+    /\d/.test(q) || /\b(and|with)\b|,/.test(q) || q.split(/\s+/).length >= 4
+  );
+}
+
 function SearchStep({
   onPick,
   onCustom,
+  onDescribe,
+  onBarcode,
 }: {
   onPick: (hit: FoodHit, via: "search" | "recent") => void;
   onCustom: () => void;
+  onDescribe: (text: string) => void;
+  onBarcode: (code: string) => void;
 }) {
   const [query, setQuery] = useState("");
   const q = useDebounced(query.trim(), 120);
@@ -91,6 +114,7 @@ function SearchStep({
     staleTime: 30_000,
   });
   const showingStale = data?.query !== q;
+  const isBarcode = /^\d{8,14}$/.test(q.replace(/[\s-]/g, ""));
 
   const groups: {
     heading: string;
@@ -170,6 +194,34 @@ function SearchStep({
         )}
         <Command.Group>
           <Command.Item
+            value="describe-meal"
+            onSelect={() => onDescribe(query.trim())}
+            className={cn(
+              "flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-ink-muted data-[selected=true]:bg-surface-2 data-[selected=true]:text-ink",
+              q && !isBarcode && looksDescribed(q) && "text-ink",
+            )}
+          >
+            <MessageSquareText aria-hidden className="size-4" />
+            {q && !isBarcode && looksDescribed(q) ? (
+              <span className="min-w-0 truncate">
+                Log &ldquo;{q}&rdquo; in plain English
+              </span>
+            ) : (
+              "Describe a meal in plain English"
+            )}
+          </Command.Item>
+          <Command.Item
+            value="barcode"
+            onSelect={() => onBarcode(isBarcode ? q : "")}
+            className={cn(
+              "flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-ink-muted data-[selected=true]:bg-surface-2 data-[selected=true]:text-ink",
+              isBarcode && "text-ink",
+            )}
+          >
+            <ScanBarcode aria-hidden className="size-4" />
+            {isBarcode ? `Look up barcode ${q}` : "Look up a barcode"}
+          </Command.Item>
+          <Command.Item
             value="create-custom-food"
             onSelect={onCustom}
             className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-ink-muted data-[selected=true]:bg-surface-2 data-[selected=true]:text-ink"
@@ -188,6 +240,7 @@ function AmountStep({
   loggedVia,
   date,
   initialSlot,
+  openedAt,
   onBack,
   onDone,
 }: {
@@ -195,6 +248,7 @@ function AmountStep({
   loggedVia: "search" | "recent";
   date: string;
   initialSlot: MealSlot;
+  openedAt: number;
   onBack: () => void;
   onDone: () => void;
 }) {
@@ -251,6 +305,7 @@ function AmountStep({
         date,
         mealSlot: slot,
         loggedVia,
+        ...(openedAt ? { logMs: Date.now() - openedAt } : {}),
         item: {
           kind: "food",
           foodId: hit.id,
@@ -350,10 +405,13 @@ function AmountStep({
 function Panel({
   date,
   initialSlot,
+  openedAt,
   onDone,
 }: {
   date: string;
   initialSlot: MealSlot;
+  /** Epoch ms the palette opened, to measure how long logging takes. */
+  openedAt: number;
   onDone: () => void;
 }) {
   const [step, setStep] = useState<Step>({ kind: "search" });
@@ -365,8 +423,30 @@ function Panel({
         loggedVia={step.loggedVia}
         date={date}
         initialSlot={initialSlot}
+        openedAt={openedAt}
         onBack={() => setStep({ kind: "search" })}
         onDone={onDone}
+      />
+    );
+  }
+  if (step.kind === "describe") {
+    return (
+      <DescribeStep
+        initialText={step.text}
+        date={date}
+        initialSlot={initialSlot}
+        openedAt={openedAt}
+        onBack={() => setStep({ kind: "search" })}
+        onDone={onDone}
+      />
+    );
+  }
+  if (step.kind === "barcode") {
+    return (
+      <BarcodeStep
+        initialCode={step.code}
+        onBack={() => setStep({ kind: "search" })}
+        onFound={(hit) => setStep({ kind: "amount", hit, loggedVia: "search" })}
       />
     );
   }
@@ -384,6 +464,8 @@ function Panel({
     <SearchStep
       onPick={(hit, loggedVia) => setStep({ kind: "amount", hit, loggedVia })}
       onCustom={() => setStep({ kind: "custom" })}
+      onDescribe={(text) => setStep({ kind: "describe", text })}
+      onBarcode={(code) => setStep({ kind: "barcode", code })}
     />
   );
 }
@@ -406,13 +488,22 @@ export function QuickLog({
   const desktop = useMediaQuery(DESKTOP);
   // Fresh state each time the palette opens.
   const [session, setSession] = useState(0);
+  const [openedAt, setOpenedAt] = useState(0);
   useEffect(() => {
-    if (open) setSession((s) => s + 1);
+    if (!open) return;
+    setSession((s) => s + 1);
+    setOpenedAt(Date.now());
   }, [open]);
   const slot = initialSlot ?? defaultSlotForHour(new Date().getHours());
   const close = () => onOpenChange(false);
   const panel = (
-    <Panel key={session} date={date} initialSlot={slot} onDone={close} />
+    <Panel
+      key={session}
+      date={date}
+      initialSlot={slot}
+      openedAt={openedAt}
+      onDone={close}
+    />
   );
 
   if (desktop) {

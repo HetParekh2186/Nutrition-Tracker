@@ -478,6 +478,7 @@ export const diaryEntries = pgTable(
     portionLabel: text(),
     cookSessionId: uuid(), // set when logged from Cook Mode
     loggedVia: text({ enum: LOGGED_VIA }).notNull().default("search"),
+    logMs: integer(), // time from opening Quick Log to logging, for Impact
     createdAt: createdAt(),
   },
   (t) => [

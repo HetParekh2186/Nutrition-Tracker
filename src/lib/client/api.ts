@@ -16,11 +16,12 @@ import type {
   TargetsUpdateInput,
 } from "@/lib/api/schemas";
 import type { DaySummaryDTO, DiaryDayDTO } from "@/lib/diary/types";
-import type { FoodDetail, FoodSearchResult } from "@/lib/foods/types";
+import type { FoodDetail, FoodHit, FoodSearchResult } from "@/lib/foods/types";
 import type { RangeSummaryDTO, SourcesDTO } from "@/lib/insights/types";
 import type { RecipeDetailDTO, RecipeSummaryDTO } from "@/lib/recipes/types";
 import type { RecommendationsDTO } from "@/lib/recommend/types";
 import type { CookSessionDTO } from "@/lib/cook/types";
+import type { ParsedLogItem } from "@/lib/log/types";
 import type { z } from "zod";
 import type {
   PreferencesDTO,
@@ -140,6 +141,13 @@ export const api = {
     request<{ ok: true }>(`/api/recipes/${recipeId}/interactions`, {
       method: "POST",
       body: JSON.stringify(input),
+    }),
+  barcode: (code: string) =>
+    request<FoodHit>(`/api/foods/barcode/${encodeURIComponent(code)}`),
+  parseLog: (text: string) =>
+    request<{ items: ParsedLogItem[] }>("/api/log/parse", {
+      method: "POST",
+      body: JSON.stringify({ text }),
     }),
   startCook: (recipeId: string, servings: number) =>
     request<{ id: string }>("/api/cook-sessions", {

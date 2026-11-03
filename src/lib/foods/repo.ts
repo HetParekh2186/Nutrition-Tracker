@@ -8,6 +8,7 @@ import { foodNutrients, foodPortions, foods } from "@/lib/db/schema";
 import { N } from "@/lib/nutrition/catalog";
 import { withEstimatedEnergy, type NutrientMap } from "@/lib/nutrition/math";
 
+import type { OffFood } from "./off";
 import { prefixTsQuery } from "./query";
 import type { FoodDetail, FoodHit } from "./types";
 
@@ -226,6 +227,78 @@ export async function getFood(
     energyEstimated: nutrients?.energyEstimated ?? false,
     portions,
   };
+}
+
+/**
+ * A packaged food by barcode: from the cache of earlier lookups, else from
+ * Open Food Facts, stored for next time. Null when nobody knows it.
+ */
+export async function foodByBarcode(
+  userId: string,
+  code: string,
+  fetchProduct: (code: string) => Promise<OffFood | null>,
+): Promise<FoodDetail | null> {
+  const db = getDb();
+  const cached = await db
+    .select({ id: foods.id })
+    .from(foods)
+    .where(and(eq(foods.source, "off"), eq(foods.sourceId, code)))
+    .limit(1);
+  if (cached[0]) return getFood(userId, cached[0].id);
+
+  const product = await fetchProduct(code);
+  if (!product) return null;
+  const id = await db.transaction(async (tx) => {
+    const [food] = await tx
+      .insert(foods)
+      .values({
+        source: "off",
+        sourceId: code,
+        name: product.name,
+        brand: product.brand,
+      })
+      .onConflictDoNothing()
+      .returning({ id: foods.id });
+    // Lost a race with another lookup of the same code: use theirs.
+    if (!food) return null;
+    const rows = Object.entries(product.per100g).map(([nid, amount]) => ({
+      foodId: food.id,
+      nutrientId: Number(nid),
+      amountPer100g: amount,
+    }));
+    if (rows.length) await tx.insert(foodNutrients).values(rows);
+    if (product.portion) {
+      await tx
+        .insert(foodPortions)
+        .values({ foodId: food.id, ...product.portion });
+    }
+    return food.id;
+  });
+  if (id === null) return foodByBarcode(userId, code, async () => null);
+  return getFood(userId, id);
+}
+
+/** Portions for several foods in one query, keyed by food id. */
+export async function portionsFor(
+  foodIds: number[],
+): Promise<Map<number, { label: string; grams: number }[]>> {
+  const out = new Map<number, { label: string; grams: number }[]>();
+  if (foodIds.length === 0) return out;
+  const rows = await getDb()
+    .select({
+      foodId: foodPortions.foodId,
+      label: foodPortions.label,
+      grams: foodPortions.grams,
+    })
+    .from(foodPortions)
+    .where(inArray(foodPortions.foodId, foodIds))
+    .orderBy(asc(foodPortions.id));
+  for (const r of rows) {
+    const list = out.get(r.foodId) ?? [];
+    list.push({ label: r.label, grams: r.grams });
+    out.set(r.foodId, list);
+  }
+  return out;
 }
 
 export type CustomFoodInput = {

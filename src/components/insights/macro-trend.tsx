@@ -104,6 +104,7 @@ export function MacroTrend({
             data={points}
             margin={{ top: 8, right: 4, bottom: 0, left: -16 }}
             barCategoryGap={dense ? 1 : 2}
+            accessibilityLayer={false}
           >
             <CartesianGrid
               vertical={false}

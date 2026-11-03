@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 
 import { ThemeProvider } from "@/components/theme/theme-provider";
@@ -24,6 +24,15 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: { default: "Mise", template: "%s · Mise" },
   description: "A nutrition tracker that learns what you eat.",
+  applicationName: "Mise",
+  appleWebApp: { capable: true, title: "Mise", statusBarStyle: "default" },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f7f4ee" },
+    { media: "(prefers-color-scheme: dark)", color: "#12110f" },
+  ],
 };
 
 export default function RootLayout({

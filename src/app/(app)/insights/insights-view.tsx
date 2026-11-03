@@ -8,7 +8,7 @@ import { MicroGrid } from "@/components/insights/micro-grid";
 import { SourcesPanel } from "@/components/insights/sources-panel";
 import { MACRO_META } from "@/components/nutrition/macro-chip";
 import type { SuggestionStats } from "@/lib/insights/repo";
-import type { RangeSummaryDTO } from "@/lib/insights/types";
+import type { ImpactDTO, RangeSummaryDTO } from "@/lib/insights/types";
 import { formatAmount } from "@/lib/nutrition/format";
 import type { Macros } from "@/lib/nutrition/macros";
 import { daysMeeting } from "@/lib/nutrition/range";
@@ -60,16 +60,82 @@ function Stat({
   );
 }
 
+const VIA_LABELS: Record<string, string> = {
+  search: "Search",
+  recent: "Recent and frequent",
+  natural_language: "Plain English",
+  recipe: "Recipes",
+  cook_mode: "Cook Mode",
+  copy: "Copied from another day",
+};
+
+function ImpactSection({ impact }: { impact: ImpactDTO }) {
+  const total = impact.loggedVia.reduce((s, v) => s + v.count, 0);
+  const share = (n: number, of: number) =>
+    of ? `${Math.round((n / of) * 100)}%` : "None yet";
+  return (
+    <section aria-labelledby="impact-heading" className="grid gap-4">
+      <div>
+        <h2 id="impact-heading" className="text-xl">
+          Impact
+        </h2>
+        <p className="mt-1 text-sm text-ink-muted">
+          How Mise fits your routine over this range. Only you see this.
+        </p>
+      </div>
+      <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Stat
+          label="Time to log"
+          value={
+            impact.medianLogSeconds === null
+              ? "None yet"
+              : `${impact.medianLogSeconds.toFixed(1)}s`
+          }
+          detail={`median from opening Quick Log, ${impact.timedLogs} timed logs`}
+        />
+        <Stat
+          label="Dinners from suggestions"
+          value={share(impact.dinnerDaysFromMise, impact.dinnerDays)}
+          detail={`${impact.dinnerDaysFromMise} of ${impact.dinnerDays} dinners were recipes Mise suggested`}
+        />
+        <div className="grid gap-2 rounded-xl border border-border bg-surface p-4">
+          <dt className="text-sm text-ink-muted">How you log</dt>
+          <dd>
+            {total === 0 ? (
+              <span className="text-sm text-ink-muted">
+                Nothing logged yet.
+              </span>
+            ) : (
+              <ul className="grid gap-1 text-sm">
+                {impact.loggedVia.map((v) => (
+                  <li key={v.via} className="flex justify-between gap-3">
+                    <span>{VIA_LABELS[v.via] ?? v.via}</span>
+                    <span className="num text-ink-muted">
+                      {share(v.count, total)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </dd>
+        </div>
+      </dl>
+    </section>
+  );
+}
+
 export function InsightsView({
   range,
   summary,
   week,
   suggestions,
+  impact,
 }: {
   range: 7 | 30 | 90;
   summary: RangeSummaryDTO;
   week: RangeSummaryDTO;
   suggestions: SuggestionStats;
+  impact: ImpactDTO;
 }) {
   const [selected, setSelected] = useState<number | null>(null);
   const { averageMacros: avg, targetMacros: target } = summary;
@@ -161,6 +227,8 @@ export function InsightsView({
           ))}
         </div>
       </section>
+
+      <ImpactSection impact={impact} />
 
       <section
         aria-labelledby="micro-heading"

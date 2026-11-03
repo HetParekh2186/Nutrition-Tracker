@@ -248,6 +248,7 @@ export async function addEntry(
     mealSlot: MealSlot;
     loggedVia: LoggedVia;
     cookSessionId?: string | undefined;
+    logMs?: number | undefined;
     item: NewEntry;
   },
 ): Promise<number> {
@@ -258,6 +259,7 @@ export async function addEntry(
     mealSlot: input.mealSlot,
     loggedVia: input.loggedVia,
     cookSessionId: input.cookSessionId ?? null,
+    logMs: input.logMs ?? null,
   };
   const values =
     input.item.kind === "food"
