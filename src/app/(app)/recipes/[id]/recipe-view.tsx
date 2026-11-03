@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   Bookmark,
   BookmarkCheck,
+  ChefHat,
   Clock,
   Minus,
   Pencil,
@@ -304,6 +305,11 @@ export function RecipeView({
     },
     onError: (err) => toast.error(err.message),
   });
+  const cook = useMutation({
+    mutationFn: () => api.startCook(initial.id, servings),
+    onSuccess: ({ id }) => router.push(`/cook/${id}`),
+    onError: (err) => toast.error(err.message),
+  });
   const [saved, setSaved] = useState(initial.saved);
   const [rating, setRating] = useState(initial.myRating);
   const interact = useMutation({
@@ -374,7 +380,14 @@ export function RecipeView({
           {recipe.tags.length ? <span>{recipe.tags.join(" · ")}</span> : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={() => setDialog("log")}>
+          <Button
+            onClick={() => cook.mutate()}
+            disabled={cook.isPending || recipe.steps.length === 0}
+          >
+            <ChefHat aria-hidden />
+            {cook.isPending ? "Starting" : "Start cooking"}
+          </Button>
+          <Button variant="outline" onClick={() => setDialog("log")}>
             <Utensils aria-hidden />
             Log as eaten
           </Button>

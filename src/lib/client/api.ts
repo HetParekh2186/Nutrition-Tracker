@@ -6,6 +6,8 @@ import type {
   DiaryPatchInput,
   NewDiaryEntryInput,
   AdaptRequest,
+  CompleteCookInput,
+  CookPatchInput,
   GenerateRequestInput,
   InteractionRequestInput,
   PreferencesUpdateInput,
@@ -18,6 +20,7 @@ import type { FoodDetail, FoodSearchResult } from "@/lib/foods/types";
 import type { RangeSummaryDTO, SourcesDTO } from "@/lib/insights/types";
 import type { RecipeDetailDTO, RecipeSummaryDTO } from "@/lib/recipes/types";
 import type { RecommendationsDTO } from "@/lib/recommend/types";
+import type { CookSessionDTO } from "@/lib/cook/types";
 import type { z } from "zod";
 import type {
   PreferencesDTO,
@@ -138,6 +141,23 @@ export const api = {
       method: "POST",
       body: JSON.stringify(input),
     }),
+  startCook: (recipeId: string, servings: number) =>
+    request<{ id: string }>("/api/cook-sessions", {
+      method: "POST",
+      body: JSON.stringify({ recipe_id: recipeId, servings }),
+    }),
+  patchCook: (id: string, patch: CookPatchInput) =>
+    request<CookSessionDTO>(`/api/cook-sessions/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    }),
+  completeCook: (id: string, input: CompleteCookInput) =>
+    request<{ recipeId: string; entryId: number }>(
+      `/api/cook-sessions/${id}/complete`,
+      { method: "POST", body: JSON.stringify(input) },
+    ),
+  cookMessage: (id: string, text: string) =>
+    streamRequest(`/api/cook-sessions/${id}/messages`, { text }),
   /** Streaming endpoints return the raw Response for readNdjson. */
   generateRecipe: (input: GenerateRequestInput) =>
     streamRequest("/api/recipes/generate", input),
