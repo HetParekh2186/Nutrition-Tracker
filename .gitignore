@@ -52,3 +52,6 @@ next-env.d.ts
 /blob-report/
 /playwright/.cache/
 /coverage/
+
+# README media frames (only the built GIF is kept)
+/docs/media/flow-b/
