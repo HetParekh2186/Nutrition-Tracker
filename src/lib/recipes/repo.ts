@@ -30,6 +30,8 @@ import type { NutrientMap } from "@/lib/nutrition/math";
 
 import { recipeNutrition as computeNutrition, scaleQuantity } from "./compute";
 import { withDietTags } from "./diet";
+import { embedRecipes } from "@/lib/recommend/embed-repo";
+import { recipeStates } from "@/lib/recommend/interactions";
 import type { RecipeDetailDTO, RecipeSource, RecipeSummaryDTO } from "./types";
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
@@ -132,7 +134,12 @@ export async function listRecipes(
     filters.push(or(ilike(recipes.title, q), ilike(recipes.cuisine, q))!);
   }
   if (options.tags?.length) {
-    filters.push(sql`${recipes.tags} && ${sql.param(options.tags)}::text[]`);
+    filters.push(
+      sql`${recipes.tags} && array[${sql.join(
+        options.tags.map((t) => sql`${t}`),
+        sql`, `,
+      )}]::text[]`,
+    );
   }
   if (options.slot) {
     filters.push(sql`${options.slot} = any(${recipes.mealTypes})`);
@@ -182,6 +189,7 @@ export async function getRecipe(
       : null,
   ]);
   const nutrition = (await cachedNutrition([id])).get(id) ?? {};
+  const state = (await recipeStates(userId, [id])).get(id);
   const servings = viewServings ?? row.servings;
   const unmatched = summary?.unmatched ?? 0;
 
@@ -219,6 +227,9 @@ export async function getRecipe(
       ingredientIds: s.ingredientIds,
     })),
     createdAt: row.createdAt.toISOString(),
+    saved: state?.saved ?? false,
+    myRating: state?.rating ?? null,
+    cookCount: state?.cookCount ?? 0,
   };
 }
 
@@ -321,6 +332,15 @@ async function writeChildren(tx: Tx, recipeId: string, input: RecipeInput) {
   }
 }
 
+/** Embeddings feed suggestions; a failure must not fail the save. */
+async function refreshEmbedding(id: string): Promise<void> {
+  try {
+    await embedRecipes({ ids: [id] });
+  } catch (err) {
+    console.error("Embedding failed for recipe", id, err);
+  }
+}
+
 export async function createRecipe(
   userId: string | null,
   input: RecipeInput,
@@ -328,7 +348,7 @@ export async function createRecipe(
     source: "user",
   },
 ): Promise<string> {
-  return getDb().transaction(async (tx) => {
+  const id = await getDb().transaction(async (tx) => {
     const [row] = await tx
       .insert(recipes)
       .values({
@@ -350,6 +370,8 @@ export async function createRecipe(
     await rebuildNutrition(tx, row.id);
     return row.id;
   });
+  await refreshEmbedding(id);
+  return id;
 }
 
 export async function updateRecipe(
@@ -376,6 +398,7 @@ export async function updateRecipe(
     await writeChildren(tx, id, input);
     await rebuildNutrition(tx, id);
   });
+  await refreshEmbedding(id);
 }
 
 export async function deleteRecipe(

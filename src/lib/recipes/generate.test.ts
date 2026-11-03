@@ -233,3 +233,21 @@ describe("excludedHits", () => {
     expect(excludedHits(recorded, ["ime"])).toEqual([]);
   });
 });
+
+describe("excludedHits with categories", () => {
+  it("blocks a lime-free rule only by name, but shellfish by its members", () => {
+    const shrimpy = {
+      ...recorded,
+      ingredients: [
+        ...recorded.ingredients,
+        {
+          display_text: "200 g prawns",
+          food_query: "shrimp, raw",
+          quantity_g: 200,
+        },
+      ],
+    };
+    expect(excludedHits(shrimpy, ["shellfish"])).toEqual(["shellfish"]);
+    expect(excludedHits(recorded, ["shellfish"])).toEqual([]);
+  });
+});

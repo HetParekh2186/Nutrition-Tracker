@@ -7,6 +7,7 @@ import type {
   NewDiaryEntryInput,
   AdaptRequest,
   GenerateRequestInput,
+  InteractionRequestInput,
   PreferencesUpdateInput,
   ProfileUpdateInput,
   RecipeInputDraft,
@@ -16,6 +17,7 @@ import type { DaySummaryDTO, DiaryDayDTO } from "@/lib/diary/types";
 import type { FoodDetail, FoodSearchResult } from "@/lib/foods/types";
 import type { RangeSummaryDTO, SourcesDTO } from "@/lib/insights/types";
 import type { RecipeDetailDTO, RecipeSummaryDTO } from "@/lib/recipes/types";
+import type { RecommendationsDTO } from "@/lib/recommend/types";
 import type { z } from "zod";
 import type {
   PreferencesDTO,
@@ -127,6 +129,15 @@ export const api = {
     }),
   deleteRecipe: (id: string) =>
     request<void>(`/api/recipes/${id}`, { method: "DELETE" }),
+  recommendations: (slot: string, limit = 10) =>
+    request<RecommendationsDTO>(
+      `/api/recommendations?slot=${slot}&limit=${limit}`,
+    ),
+  interact: (recipeId: string, input: InteractionRequestInput) =>
+    request<{ ok: true }>(`/api/recipes/${recipeId}/interactions`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
   /** Streaming endpoints return the raw Response for readNdjson. */
   generateRecipe: (input: GenerateRequestInput) =>
     streamRequest("/api/recipes/generate", input),

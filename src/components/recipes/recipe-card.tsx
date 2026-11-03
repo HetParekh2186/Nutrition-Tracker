@@ -47,8 +47,7 @@ export function RecipeCard({
             </span>
           ) : null}
           <span>
-            per serving · <span className="num">{recipe.servings}</span>{" "}
-            {recipe.servings === 1 ? "serving" : "servings"}
+            Makes <span className="num">{recipe.servings}</span>
           </span>
           {recipe.source === "ai_generated" ||
           recipe.source === "ai_adapted" ? (
@@ -57,7 +56,10 @@ export function RecipeCard({
             </span>
           ) : null}
         </div>
-        <MacroLine macros={recipe.perServing} />
+        <div className="flex flex-wrap items-baseline gap-x-2">
+          <span className="text-xs text-ink-muted">Per serving</span>
+          <MacroLine macros={recipe.perServing} />
+        </div>
         {recipe.unmatched > 0 ? (
           <p className="text-xs text-warn">
             {recipe.unmatched} ingredient{recipe.unmatched === 1 ? "" : "s"} not

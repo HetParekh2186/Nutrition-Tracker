@@ -7,6 +7,8 @@
 
 import { updatePreferences, updateProfile } from "@/lib/profile/repo";
 import { addDays, localDate } from "@/lib/nutrition/dates";
+import { embedRecipes } from "@/lib/recommend/embed-repo";
+import { rebuildTasteProfile } from "@/lib/recommend/taste-repo";
 
 import { chunk, scriptSql } from "./lib/db";
 import { DEFAULT_DEMO_EMAIL, ensureDemoUser } from "./lib/demo-user";
@@ -149,6 +151,118 @@ async function main() {
       return list[list.length - 1]!;
     };
 
+    // Cook history from the starter library: a few favourites made more
+    // than once, ratings, saves and a skip, so suggestions have taste to
+    // learn from. Needs pnpm seed:recipes first.
+    const starter = await sql<{ id: string; title: string }[]>`
+      select id, title from recipes where owner_id is null
+    `;
+    const recipeId = new Map(starter.map((r) => [r.title, r.id]));
+    const COOKS: [title: string, daysAgo: number][] = [
+      ["Chicken tikka masala", 52],
+      ["Turkey and bean chili", 45],
+      ["Chicken tikka masala", 33],
+      ["Chipotle chicken burrito bowl", 27],
+      ["Chana masala", 20],
+      ["Turkey and bean chili", 16],
+      ["Chicken tikka masala", 11],
+      ["Chipotle chicken burrito bowl", 6],
+      ["Chana masala", 3],
+    ];
+    const RATINGS: [string, number][] = [
+      ["Chicken tikka masala", 5],
+      ["Chana masala", 4],
+      ["Turkey and bean chili", 4],
+      ["Chipotle chicken burrito bowl", 4],
+    ];
+    const SAVES = [
+      "Thai basil chicken",
+      "Lemon herb chicken with roasted potatoes",
+      "Dal tadka",
+    ];
+    const SKIPS = ["Tofu and broccoli stir-fry"];
+    const cookByDate = new Map<string, { id: string; title: string }>();
+    const interactions: Record<string, unknown>[] = [];
+    if (starter.length === 0) {
+      console.warn(
+        "No starter recipes; run pnpm seed:recipes for cook history.",
+      );
+    } else {
+      for (const [title, daysAgo] of COOKS) {
+        const id = recipeId.get(title);
+        if (!id) continue;
+        const date = addDays(today, -daysAgo);
+        cookByDate.set(date, { id, title });
+        for (const event of ["cook_start", "cook_complete", "log"] as const) {
+          interactions.push({
+            user_id: userId,
+            recipe_id: id,
+            event,
+            created_at: chicagoInstant(
+              date,
+              event === "cook_start" ? 18 : 19,
+              event === "log" ? 40 : 30,
+            ),
+          });
+        }
+      }
+      // For You impressions: the evening before each cook, the cooked dish
+      // and four others were in the top 5.
+      const others = starter.map((r) => r.id);
+      for (const [title, daysAgo] of COOKS) {
+        const id = recipeId.get(title);
+        if (!id) continue;
+        const shownAt = chicagoInstant(addDays(today, -(daysAgo + 1)), 18, 30);
+        const fillers = others
+          .filter((o) => o !== id)
+          .sort(() => rand() - 0.5)
+          .slice(0, 4);
+        for (const shown of [id, ...fillers]) {
+          interactions.push({
+            user_id: userId,
+            recipe_id: shown,
+            event: "impression",
+            created_at: shownAt,
+          });
+        }
+      }
+      for (const [title, rating] of RATINGS) {
+        const id = recipeId.get(title);
+        if (id) {
+          interactions.push({
+            user_id: userId,
+            recipe_id: id,
+            event: "rate",
+            rating,
+            created_at: chicagoInstant(addDays(today, -2), 21, 0),
+          });
+        }
+      }
+      SAVES.forEach((title, i) => {
+        const id = recipeId.get(title);
+        if (id) {
+          interactions.push({
+            user_id: userId,
+            recipe_id: id,
+            event: "save",
+            created_at: chicagoInstant(addDays(today, -(8 + i * 5)), 20, 0),
+          });
+        }
+      });
+      for (const title of SKIPS) {
+        const id = recipeId.get(title);
+        if (id) {
+          interactions.push({
+            user_id: userId,
+            recipe_id: id,
+            event: "skip",
+            created_at: chicagoInstant(addDays(today, -4), 18, 0),
+          });
+        }
+      }
+      await sql`insert into recipe_interactions ${sql(interactions)}`;
+    }
+
     const rows: Record<string, unknown>[] = [];
     const skipDays = new Set(
       [DAYS - 9, DAYS - 23, DAYS - 41].map((d) => addDays(today, -d)),
@@ -166,6 +280,20 @@ async function main() {
         },
       );
       for (const slot of slots) {
+        // Cooked dinners are logged as the recipe itself.
+        const cooked = slot === "dinner" ? cookByDate.get(date) : undefined;
+        if (cooked) {
+          rows.push({
+            user_id: userId,
+            entry_date: date,
+            meal_slot: "dinner",
+            recipe_id: cooked.id,
+            servings: 1,
+            logged_via: "cook_mode",
+            created_at: chicagoInstant(date, 19, 40),
+          });
+          continue;
+        }
         const meals = [pick(DEMO_MEALS[slot])];
         // Some afternoons get a second snack.
         if (slot === "snack" && rand() < 0.45)
@@ -197,12 +325,21 @@ async function main() {
         }
       }
     }
-    for (const batch of chunk(rows, 500)) {
+    // Food and recipe rows have different columns; insert each shape apart.
+    const foodRows = rows.filter((r) => r.food_id !== undefined);
+    const recipeRows = rows.filter((r) => r.recipe_id !== undefined);
+    for (const batch of chunk(foodRows, 500)) {
       await sql`insert into diary_entries ${sql(batch)}`;
     }
+    if (recipeRows.length) {
+      await sql`insert into diary_entries ${sql(recipeRows)}`;
+    }
+
+    await embedRecipes();
+    await rebuildTasteProfile(userId);
 
     console.log(
-      `Demo ${email}: ${rows.length} diary entries over ${DAYS + 1} days, ${metrics.length} weigh-ins.`,
+      `Demo ${email}: ${rows.length} diary entries over ${DAYS + 1} days, ${metrics.length} weigh-ins, ${interactions.length} recipe interactions.`,
     );
   } finally {
     await sql.end();

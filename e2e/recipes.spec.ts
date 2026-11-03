@@ -20,7 +20,8 @@ test("scale a starter recipe and log it as eaten", async ({ page }) => {
   await expect(chicken.getByText("300 g", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Log as eaten" }).click();
-  await page.getByRole("radio", { name: "Dinner" }).check();
+  await page.getByRole("dialog").getByText("Dinner", { exact: true }).click();
+  await expect(page.getByRole("radio", { name: "Dinner" })).toBeChecked();
   await page.getByRole("button", { name: "Log to dinner" }).click();
   await expect(page.getByText("Logged to dinner")).toBeVisible();
 
