@@ -23,7 +23,7 @@
   --fiber: #3e8e7e;
   --good: #3e8e5a;
   --warn: #c98500;
-  --over: #c2412d;
+  --over: #a83522;
 
   /* Derived: text on paprika (ink passes WCAG AA, white does not) */
   --on-accent: #1a1814;
@@ -47,7 +47,7 @@
   --fiber: #5db3a1;
   --good: #5db57a;
   --warn: #e8a21e;
-  --over: #e4614b;
+  --over: #f07a64;
 
   --on-accent: #12110f;
   --scrim: rgb(0 0 0 / 0.56);
