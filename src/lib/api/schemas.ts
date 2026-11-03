@@ -257,3 +257,31 @@ export const InteractionRequest = z.discriminatedUnion("event", [
   }),
 ]);
 export type InteractionRequestInput = z.input<typeof InteractionRequest>;
+
+// ---------- Cook Mode (Phase 5) ----------
+
+export const StartCookRequest = z.object({
+  recipe_id: z.uuid(),
+  servings: z.number().positive().max(24),
+});
+
+export const CookPatchRequest = z
+  .object({
+    currentStep: z.number().int().min(1).max(100).optional(),
+    servings: z.number().positive().max(24).optional(),
+    proposal: z
+      .object({ id: z.number().int().positive(), accept: z.boolean() })
+      .optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, "Nothing to update");
+export type CookPatchInput = z.input<typeof CookPatchRequest>;
+
+export const CookMessageRequest = z.object({
+  text: z.string().trim().min(1).max(1000),
+});
+
+export const CompleteCookRequest = z.object({
+  servings: z.number().positive().max(20).default(1),
+  mealSlot: MealSlotSchema.default("dinner"),
+});
+export type CompleteCookInput = z.input<typeof CompleteCookRequest>;
