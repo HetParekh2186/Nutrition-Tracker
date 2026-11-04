@@ -1,6 +1,7 @@
 "use client";
 
-import { Copy, Plus } from "lucide-react";
+import { BookmarkPlus, Copy, Plus } from "lucide-react";
+import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 
@@ -110,7 +111,14 @@ function Slot({
             <Copy aria-hidden />
             Copy yesterday
           </Button>
-        ) : null}
+        ) : (
+          <Button asChild variant="ghost" size="sm">
+            <Link href={`/foods/meals/new?date=${date}&slot=${slot}`}>
+              <BookmarkPlus aria-hidden />
+              Save as meal
+            </Link>
+          </Button>
+        )}
       </footer>
     </section>
   );

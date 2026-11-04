@@ -12,9 +12,9 @@ import {
 
 import type { MealSlot } from "@/lib/db/enums";
 
-import { QuickLog } from "./quick-log";
+import { QuickLog, type Step } from "./quick-log";
 
-type OpenOptions = { slot?: MealSlot };
+type OpenOptions = { slot?: MealSlot; step?: Step };
 
 type QuickLogContextValue = {
   open: (options?: OpenOptions) => void;
@@ -40,10 +40,12 @@ export function QuickLogProvider({
 }) {
   const [isOpen, setOpen] = useState(false);
   const [slot, setSlot] = useState<MealSlot | undefined>();
+  const [step, setStep] = useState<Step | undefined>();
   const [date, setDate] = useState(today);
 
   const open = useCallback((options?: OpenOptions) => {
     setSlot(options?.slot);
+    setStep(options?.step);
     setOpen(true);
   }, []);
 
@@ -53,6 +55,7 @@ export function QuickLogProvider({
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setSlot(undefined);
+        setStep(undefined);
         setOpen((v) => !v);
       }
     }
@@ -70,6 +73,7 @@ export function QuickLogProvider({
         onOpenChange={setOpen}
         date={date}
         initialSlot={slot}
+        initialStep={step}
       />
     </QuickLogContext.Provider>
   );

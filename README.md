@@ -31,6 +31,8 @@ One number is fixed by design: every nutrient value on screen traces to USDA Foo
 
 **Quick Log.** Press Ctrl+K (or the plus button on a phone) to search more than 8,000 USDA foods. Results rank foods you log often first, and portions come from USDA ("1 large egg", "1 cup, chopped"). Typing a barcode looks the product up in Open Food Facts.
 
+**Foods.** A library tab with everything you have built up. My foods keeps every food you have logged or created in one searchable list, sorted by most recent or most logged, and one tap logs it again. Saved meals group foods and recipes you eat together ("Usual breakfast"), so you can log them all at once, scaled to any portion. Save a meal from scratch or straight from a slot on Today. Custom foods and recipes are created from the same tab.
+
 **Plain-English logging.** Describe a meal the way you would say it. Claude splits it into foods; Mise matches each one to USDA data, converts the amount to grams and shows its confidence. Anything under 70% asks you to check it before logging.
 
 ![Describe a meal, then check every match before logging](docs/media/plain-english.png)

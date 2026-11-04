@@ -57,7 +57,14 @@ test("no horizontal overflow on Today with long food names", async ({
   }
 });
 
-for (const path of ["/insights?range=90", "/settings", "/onboarding"]) {
+for (const path of [
+  "/insights?range=90",
+  "/settings",
+  "/onboarding",
+  "/foods",
+  "/foods/mine",
+  "/foods/meals/new",
+]) {
   test(`no horizontal overflow on ${path}`, async ({ page }) => {
     await signInAsDemo(page);
     await page.goto(path);

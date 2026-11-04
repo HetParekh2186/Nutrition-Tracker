@@ -29,9 +29,11 @@ function optionalNumber(v: FormDataEntryValue | null): number | undefined {
 export function CustomFoodForm({
   onBack,
   onCreated,
+  backLabel = "Back to search",
 }: {
   onBack: () => void;
   onCreated: (hit: FoodHit) => void;
+  backLabel?: string;
 }) {
   const [error, setError] = useState<string | null>(null);
   const create = useMutation({ mutationFn: api.createFood });
@@ -84,7 +86,7 @@ export function CustomFoodForm({
           variant="ghost"
           size="icon"
           onClick={onBack}
-          aria-label="Back to search"
+          aria-label={backLabel}
         >
           <ArrowLeft />
         </Button>

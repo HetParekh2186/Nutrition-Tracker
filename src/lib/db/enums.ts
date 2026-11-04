@@ -80,6 +80,7 @@ export const LOGGED_VIA = [
   "copy",
   "recipe",
   "cook_mode",
+  "meal",
 ] as const;
 
 export const INTERACTION_EVENTS = [

@@ -10,7 +10,7 @@ import { withEstimatedEnergy, type NutrientMap } from "@/lib/nutrition/math";
 
 import type { OffFood } from "./off";
 import { prefixTsQuery } from "./query";
-import type { FoodDetail, FoodHit } from "./types";
+import type { FoodDetail, FoodHit, MyFoodDTO, MyFoodsSort } from "./types";
 
 const PREVIEW_NUTRIENTS = [N.energy, N.protein, N.carbs, N.fat, N.fiber];
 
@@ -167,6 +167,57 @@ export async function usedFoods(
      limit ${limit}
   `);
   return rows.map(toHit);
+}
+
+/**
+ * My foods: every food the user created or has logged, with how often and
+ * when. Custom foods never logged still appear, so nothing added is lost.
+ */
+export async function myFoods(
+  userId: string,
+  options: {
+    query?: string | undefined;
+    sort: MyFoodsSort;
+    customOnly?: boolean | undefined;
+  },
+): Promise<MyFoodDTO[]> {
+  const q = options.query?.trim();
+  const orderBy =
+    options.sort === "name"
+      ? sql`lower(f.name) asc`
+      : options.sort === "frequent"
+        ? sql`coalesce(u.uses, 0) desc, coalesce(u.last_used, f.created_at) desc`
+        : sql`coalesce(u.last_used, f.created_at) desc`;
+  const rows = await getDb().execute<
+    HitRow & { owner_id: string | null; last_used: Date | string | null }
+  >(sql`
+    with u as (
+      select food_id, count(*)::int as uses, max(created_at) as last_used
+        from diary_entries
+       where user_id = ${userId} and food_id is not null
+       group by food_id
+    ),
+    mine as (
+      select id from foods where owner_id = ${userId}
+      union
+      select food_id from u
+    )
+    select ${hitColumns}, u.uses, u.last_used, f.owner_id
+      from mine
+      join foods f on f.id = mine.id
+      left join u on u.food_id = f.id
+      ${hitJoins(userId)}
+     where (f.owner_id is null or f.owner_id = ${userId})
+       ${options.customOnly ? sql`and f.owner_id = ${userId}` : sql``}
+       ${q ? sql`and (f.name ilike ${`%${q}%`} or f.brand ilike ${`%${q}%`})` : sql``}
+     order by ${orderBy}
+     limit 500
+  `);
+  return rows.map((row) => ({
+    ...toHit(row),
+    isCustom: row.owner_id !== null,
+    lastLoggedAt: row.last_used ? new Date(row.last_used).toISOString() : null,
+  }));
 }
 
 const visibleTo = (userId: string) =>

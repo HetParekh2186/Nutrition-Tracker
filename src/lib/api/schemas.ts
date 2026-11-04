@@ -88,6 +88,42 @@ export const CustomFoodRequest = z.object({
 });
 export type CustomFoodRequestInput = z.input<typeof CustomFoodRequest>;
 
+export const MyFoodsQuery = z.object({
+  q: z.string().max(100).optional(),
+  sort: z.enum(["recent", "frequent", "name"]).default("recent"),
+  filter: z.enum(["all", "custom"]).default("all"),
+});
+
+// ---------- Saved meals ----------
+
+export const MealItemSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("food"),
+    foodId: z.number().int().positive(),
+    quantityG: Grams,
+    portionLabel: z.string().max(120).nullish(),
+  }),
+  z.object({
+    kind: z.literal("recipe"),
+    recipeId: z.uuid(),
+    servings: Servings,
+  }),
+]);
+
+export const MealInputSchema = z.object({
+  name: z.string().trim().min(1, "Give the meal a name").max(80),
+  items: z.array(MealItemSchema).min(1, "Add at least one food").max(40),
+});
+export type MealInputDraft = z.input<typeof MealInputSchema>;
+
+export const LogMealRequest = z.object({
+  date: IsoDate,
+  mealSlot: MealSlotSchema,
+  /** 2 logs a double portion of every item. */
+  scale: z.number().positive().max(20).default(1),
+});
+export type LogMealInput = z.input<typeof LogMealRequest>;
+
 // ---------- Profile, preferences, targets (Phase 2) ----------
 
 /** Body stats always arrive in metric; the client converts imperial. */

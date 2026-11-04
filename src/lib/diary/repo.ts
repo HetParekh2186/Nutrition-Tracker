@@ -43,7 +43,7 @@ export async function getTimezone(userId: string): Promise<string> {
   return row?.timezone ?? "America/Chicago";
 }
 
-async function recipeMapsFor(
+export async function recipeMapsFor(
   recipeIds: string[],
 ): Promise<Map<string, NutrientMap>> {
   const out = new Map<string, NutrientMap>();

@@ -10,13 +10,22 @@ import type {
   CookPatchInput,
   GenerateRequestInput,
   InteractionRequestInput,
+  LogMealInput,
+  MealInputDraft,
   PreferencesUpdateInput,
   ProfileUpdateInput,
   RecipeInputDraft,
   TargetsUpdateInput,
 } from "@/lib/api/schemas";
 import type { DaySummaryDTO, DiaryDayDTO } from "@/lib/diary/types";
-import type { FoodDetail, FoodHit, FoodSearchResult } from "@/lib/foods/types";
+import type {
+  FoodDetail,
+  FoodHit,
+  FoodSearchResult,
+  MyFoodDTO,
+  MyFoodsSort,
+} from "@/lib/foods/types";
+import type { MealDTO } from "@/lib/meals/types";
 import type { RangeSummaryDTO, SourcesDTO } from "@/lib/insights/types";
 import type { RecipeDetailDTO, RecipeSummaryDTO } from "@/lib/recipes/types";
 import type { RecommendationsDTO } from "@/lib/recommend/types";
@@ -64,6 +73,35 @@ export const api = {
   food: (id: number) => request<FoodDetail>(`/api/foods/${id}`),
   createFood: (input: CustomFoodRequestInput) =>
     request<FoodDetail>("/api/foods", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  myFoods: (params: {
+    q?: string;
+    sort?: MyFoodsSort;
+    filter?: "all" | "custom";
+  }) => {
+    const qs = new URLSearchParams(
+      Object.entries(params).filter(([, v]) => v) as [string, string][],
+    );
+    return request<MyFoodDTO[]>(`/api/foods/mine?${qs.toString()}`);
+  },
+  meals: () => request<MealDTO[]>("/api/meals"),
+  meal: (id: string) => request<MealDTO>(`/api/meals/${id}`),
+  createMeal: (input: MealInputDraft) =>
+    request<{ id: string }>("/api/meals", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  updateMeal: (id: string, input: MealInputDraft) =>
+    request<{ id: string }>(`/api/meals/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(input),
+    }),
+  deleteMeal: (id: string) =>
+    request<void>(`/api/meals/${id}`, { method: "DELETE" }),
+  logMeal: (id: string, input: LogMealInput) =>
+    request<{ ids: number[] }>(`/api/meals/${id}/log`, {
       method: "POST",
       body: JSON.stringify(input),
     }),
