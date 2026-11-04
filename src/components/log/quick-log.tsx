@@ -372,7 +372,7 @@ function AmountStep({
                 setQuantity(String(Number((grams / next.grams).toFixed(2))));
               setUnitKey(next.key);
             }}
-            className="h-8 min-w-0 rounded-lg border border-input bg-surface-2 px-2 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="h-8 min-w-0 rounded-lg border border-input bg-surface-2 px-2 text-base outline-none focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
           >
             {options.map((o) => (
               <option key={o.key} value={o.key}>
@@ -524,10 +524,16 @@ export function QuickLog({
   }
 
   return (
-    <Drawer.Root open={open} onOpenChange={onOpenChange}>
+    // The sheet follows the visible area itself (see TrackVisibleViewport),
+    // so vaul's own keyboard handling is off; the two would fight.
+    <Drawer.Root
+      open={open}
+      onOpenChange={onOpenChange}
+      repositionInputs={false}
+    >
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-50 bg-scrim" />
-        <Drawer.Content className="fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col rounded-t-xl border border-border bg-surface shadow-float outline-none">
+        <Drawer.Content className="fixed inset-x-0 bottom-[var(--vv-bottom,0px)] z-50 flex max-h-[min(92dvh,calc(var(--vv-height,100dvh)-1rem))] flex-col rounded-t-xl border border-border bg-surface shadow-float outline-none">
           <div
             aria-hidden
             className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-border"
@@ -536,7 +542,9 @@ export function QuickLog({
           <Drawer.Description className="sr-only">
             Search for a food, choose an amount and log it.
           </Drawer.Description>
-          <div className="flex min-h-[60dvh] flex-col">{panel}</div>
+          <div className="flex min-h-[min(60dvh,calc(var(--vv-height,100dvh)-3rem))] flex-1 flex-col">
+            {panel}
+          </div>
         </Drawer.Content>
       </Drawer.Portal>
     </Drawer.Root>

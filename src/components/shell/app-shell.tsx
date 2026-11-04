@@ -18,6 +18,7 @@ import {
   clearOfflineData,
   OfflineNotice,
   RegisterServiceWorker,
+  TrackVisibleViewport,
 } from "@/components/pwa/pwa";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -91,6 +92,7 @@ export function AppShell({
         Skip to content
       </a>
       <RegisterServiceWorker />
+      <TrackVisibleViewport />
       <OfflineNotice />
       <header className="sticky top-0 z-30 border-b border-border bg-bg">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4 sm:px-6">
