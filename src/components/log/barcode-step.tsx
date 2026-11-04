@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { ArrowLeft, Loader2, ScanBarcode } from "lucide-react";
+import { ArrowLeft, Camera, Loader2, ScanBarcode } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -10,17 +10,42 @@ import { Label } from "@/components/ui/label";
 import { api } from "@/lib/client/api";
 import type { FoodHit } from "@/lib/foods/types";
 
-/** Type the digits under a barcode; Open Food Facts fills in the rest. */
+import {
+  cameraAvailable,
+  CameraScanner,
+  type CameraProblem,
+} from "./camera-scanner";
+
+const PROBLEM_TEXT: Record<CameraProblem, string> = {
+  unsupported:
+    "This browser cannot open the camera here. Type the digits instead.",
+  denied:
+    "Camera access is blocked. Allow it for this site in your browser settings, or type the digits.",
+  "no-camera": "No camera was found. Type the digits instead.",
+  failed: "The camera could not start. Type the digits instead.",
+};
+
+/**
+ * Scan a barcode with the camera, or type the digits under it; Open Food
+ * Facts fills in the rest. Phones open the camera straight away.
+ */
 export function BarcodeStep({
   initialCode,
+  autoScan = false,
   onBack,
   onFound,
 }: {
   initialCode: string;
+  autoScan?: boolean;
   onBack: () => void;
   onFound: (hit: FoodHit) => void;
 }) {
   const [code, setCode] = useState(initialCode);
+  const [canScan] = useState(cameraAvailable);
+  const [scanning, setScanning] = useState(
+    () => autoScan && !initialCode && cameraAvailable(),
+  );
+  const [problem, setProblem] = useState<CameraProblem | null>(null);
   const lookup = useMutation({
     mutationFn: (c: string) => api.barcode(c),
     onSuccess: onFound,
@@ -54,11 +79,44 @@ export function BarcodeStep({
           </p>
         </div>
       </div>
+      {scanning ? (
+        <CameraScanner
+          onDetected={(scanned) => {
+            setScanning(false);
+            setCode(scanned);
+            lookup.mutate(scanned);
+          }}
+          onProblem={(p) => {
+            setScanning(false);
+            setProblem(p);
+          }}
+        />
+      ) : canScan ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="lg"
+          onClick={() => {
+            setProblem(null);
+            lookup.reset();
+            setScanning(true);
+          }}
+        >
+          <Camera aria-hidden />
+          {code ? "Scan again" : "Scan with camera"}
+        </Button>
+      ) : null}
+      {problem ? (
+        <p role="alert" className="text-sm text-ink-muted">
+          {PROBLEM_TEXT[problem]}
+        </p>
+      ) : null}
       <div className="grid gap-1.5">
         <Label htmlFor="barcode">Digits under the barcode</Label>
         <Input
           id="barcode"
-          autoFocus
+          // Focusing would raise the keyboard over the viewfinder.
+          autoFocus={!scanning}
           inputMode="numeric"
           autoComplete="off"
           className="num"
