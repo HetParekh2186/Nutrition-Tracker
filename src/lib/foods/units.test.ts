@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  amountFromEntry,
   defaultSlotForHour,
+  equivalents,
   gramsFor,
   GRAMS_PER_OZ,
   portionLabelFor,
@@ -57,5 +59,49 @@ describe("defaultSlotForHour", () => {
     [2, "snack"],
   ] as const)("hour %i is %s", (hour, slot) => {
     expect(defaultSlotForHour(hour)).toBe(slot);
+  });
+});
+
+describe("amountFromEntry", () => {
+  const pizza = portionOptions([{ label: "1 serving", grams: 250 }]);
+
+  it("reads a multiplied portion back", () => {
+    const { quantity, option } = amountFromEntry(500, "2 × 1 serving", pizza);
+    expect(option.label).toBe("1 serving");
+    expect(quantity).toBe(2);
+  });
+
+  it("reads a single portion and ounces", () => {
+    expect(amountFromEntry(250, "1 serving", pizza).quantity).toBe(1);
+    const oz = amountFromEntry(GRAMS_PER_OZ * 3, "3 oz", pizza);
+    expect(oz.option.key).toBe("oz");
+    expect(oz.quantity).toBeCloseTo(3, 9);
+  });
+
+  it("takes the quantity from grams, so an edited weight stays exact", () => {
+    expect(amountFromEntry(375, "2 × 1 serving", pizza).quantity).toBe(1.5);
+  });
+
+  it("falls back to grams for unknown or missing labels", () => {
+    expect(amountFromEntry(120, null, pizza).option.key).toBe("g");
+    expect(amountFromEntry(120, "1 slice", pizza)).toMatchObject({
+      quantity: 120,
+      option: { key: "g" },
+    });
+  });
+});
+
+describe("equivalents", () => {
+  const pizza = portionOptions([{ label: "1 serving", grams: 250 }]);
+
+  it("states the weight in the other units, grams first", () => {
+    expect(equivalents(500, pizza, pizza[0]!.key)).toEqual([
+      "500 g",
+      "17.64 oz",
+    ]);
+    expect(equivalents(125, pizza, "g")).toEqual([
+      "0.5 × 1 serving",
+      "4.41 oz",
+    ]);
   });
 });

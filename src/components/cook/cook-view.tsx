@@ -24,14 +24,11 @@ import type { CookSessionDTO } from "@/lib/cook/types";
 import { defaultSlotForHour } from "@/lib/foods/units";
 import { formatAmount } from "@/lib/nutrition/format";
 import { FADE, SPRING } from "@/lib/motion";
+import { scaledIngredientText, shownFactor } from "@/lib/recipes/display";
 import { cn } from "@/lib/utils";
 
 import { AssistantPanel } from "./assistant-panel";
 import { formatClock, TimerPill, useTimers } from "./timers";
-
-/** "4 cloves garlic" -> "garlic": the chip shows scaled grams instead. */
-const QUANTITY_PREFIX =
-  /^[\d.,/½¼¾\s-]+(g|kg|ml|l|cups?|tbsp|tsp|cloves?|cans?|pinch(es)?|handfuls?|slices?|large|medium|small)?\.?\s+/i;
 
 function SidePanel({
   open,
@@ -306,7 +303,10 @@ export function CookView({
                             {formatAmount(ing.scaledG, "g")} g
                           </span>{" "}
                           <span className="text-ink-muted">
-                            {ing.displayText.replace(QUANTITY_PREFIX, "")}
+                            {scaledIngredientText(
+                              ing.displayText,
+                              shownFactor(ing),
+                            )}
                           </span>
                         </li>,
                       ]
@@ -400,7 +400,9 @@ export function CookView({
                     checked.has(ing.id) && "text-ink-muted line-through",
                   )}
                 >
-                  <span>{ing.displayText}</span>
+                  <span>
+                    {scaledIngredientText(ing.displayText, shownFactor(ing))}
+                  </span>
                   <span className="num text-xs text-ink-muted">
                     {formatAmount(ing.scaledG, "g")} g for {session.servings}
                   </span>

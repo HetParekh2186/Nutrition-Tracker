@@ -31,6 +31,21 @@ test("log a food from search, then delete it", async ({ page, isMobile }) => {
   await expect(slot.getByRole("listitem")).toHaveCount(before + 1);
   await expect(entry).toBeEnabled();
 
+  // Editing reopens it in the unit it was logged in, with the equivalents.
+  await entry.click();
+  const edit = page.getByRole("dialog");
+  const editAmount = edit.getByLabel("Amount");
+  await expect(editAmount).toHaveValue("2");
+  await expect(edit.getByLabel("Unit")).toHaveValue(/1 large/);
+  await expect(edit.getByText(/^= 100 g/)).toBeVisible();
+  // Switching to grams keeps the amount of food.
+  await edit.getByLabel("Unit").selectOption("g");
+  await expect(editAmount).toHaveValue("100");
+  await editAmount.fill("150");
+  await expect(edit.getByText(/3 × 1 large/)).toBeVisible();
+  await edit.getByRole("button", { name: "Save" }).click();
+  await expect(entry).toContainText("150 g");
+
   // Clean up so the demo account stays as seeded.
   await entry.click();
   await page.getByRole("button", { name: "Delete" }).click();

@@ -10,10 +10,11 @@ test("scale a starter recipe and log it as eaten", async ({ page }) => {
     page.getByRole("heading", { name: "Ingredients" }),
   ).toBeVisible();
 
-  // 4 servings -> 2 halves the chicken from 600 g to 300 g.
+  // 4 servings -> 2 halves the chicken from 600 g to 300 g. The line
+  // reads "boneless chicken"; the weight column carries the grams.
   const chicken = page
     .getByRole("listitem")
-    .filter({ hasText: "600 g boneless chicken" });
+    .filter({ hasText: "boneless chicken" });
   await expect(chicken.getByText("600 g", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Fewer servings" }).click();
   await page.getByRole("button", { name: "Fewer servings" }).click();
