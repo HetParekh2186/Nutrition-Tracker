@@ -281,16 +281,17 @@ export async function rebuildNutrition(
  */
 async function dietText(db: Db | Tx, input: RecipeInput): Promise<string[]> {
   const ids = input.ingredients.flatMap((i) => (i.foodId ? [i.foodId] : []));
-  const names = ids.length
+  const rows = ids.length
     ? await db
-        .select({ name: foods.name })
+        .select({ id: foods.id, name: foods.name })
         .from(foods)
         .where(inArray(foods.id, ids))
     : [];
-  return [
-    ...input.ingredients.map((i) => i.displayText),
-    ...names.map((n) => n.name),
-  ];
+  const names = new Map(rows.map((r) => [r.id, r.name]));
+  // One string per ingredient: the display text with its USDA name.
+  return input.ingredients.map((i) =>
+    `${i.displayText} ${(i.foodId && names.get(i.foodId)) ?? ""}`.trim(),
+  );
 }
 
 async function writeChildren(tx: Tx, recipeId: string, input: RecipeInput) {

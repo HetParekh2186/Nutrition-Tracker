@@ -36,6 +36,13 @@
       "when": 1793677459537,
       "tag": "0004_log_duration",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793769423215,
+      "tag": "0005_diet_eats",
+      "breakpoints": true
     }
   ]
 }

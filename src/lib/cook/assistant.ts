@@ -13,6 +13,7 @@ import { resolveFoodQuery } from "@/lib/foods/resolve";
 import { getAnthropic, llmModel } from "@/lib/llm/client";
 import { assertWithinRateLimit, recordUsage } from "@/lib/llm/usage";
 import { getPreferences } from "@/lib/profile/repo";
+import { dietRules } from "@/lib/recipes/diet";
 
 import {
   addMessage,
@@ -54,7 +55,7 @@ function contextBlock(
   return [
     `The user is cooking: ${s.recipe.title}, ${s.servings} servings, on step ${s.currentStep} of ${s.recipe.steps.length}.`,
     `Current step: ${step?.instruction ?? "not started"}`,
-    `Dietary rules (never violate): ${prefs.dietType ?? "omnivore"}, excluded: ${prefs.excludedIngredients.join(", ") || "none"}.`,
+    `Dietary rules (never violate). ${dietRules(prefs.eats)} Excluded: ${prefs.excludedIngredients.join(", ") || "none"}.`,
     `Ingredients as cooked now (amounts for ${s.servings} servings; quantity_g in proposals is for the recipe's original ${s.recipe.servings} servings):\n${ingredients}`,
     s.substitutions.length
       ? `Swaps accepted so far: ${s.substitutions.map((x) => `${x.newFoodName ?? x.newFoodId} for ingredient ${x.ingredientId}`).join("; ")}.`
@@ -215,6 +216,7 @@ export async function runAssistant(
           stepCount: current.recipe.steps.length,
           substitutions: current.substitutions,
           excluded: prefs.excludedIngredients,
+          eats: prefs.eats,
         },
         deps,
       );

@@ -4,16 +4,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   CUISINE_SUGGESTIONS,
-  DIET_CHOICES,
   EQUIPMENT_CHOICES,
   EXCLUSION_SUGGESTIONS,
   SPICE_LABELS,
 } from "@/lib/profile/options";
 import type { PreferencesDTO } from "@/lib/profile/types";
+import { presetFor } from "@/lib/recipes/diet";
 import { cn } from "@/lib/utils";
 
 import { ChipInput } from "./chip-input";
-import { ChoiceCards } from "./choice-cards";
+import { DietPicker } from "./diet-picker";
 
 /** Diet type, hard and soft ingredient rules, cuisines, time and kit. */
 export function PreferencesFields({
@@ -31,12 +31,11 @@ export function PreferencesFields({
 
   return (
     <div className="grid gap-7">
-      <ChoiceCards
-        legend="What do you eat?"
-        name="diet"
-        choices={DIET_CHOICES}
-        value={value.dietType}
-        onChange={(v) => set("dietType", v)}
+      <DietPicker
+        eats={value.eats}
+        onChange={(eats) =>
+          onChange({ ...value, eats, dietType: presetFor(eats) })
+        }
       />
 
       <ChipInput

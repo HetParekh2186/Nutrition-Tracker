@@ -52,14 +52,11 @@ export function OnboardingFlow({
     profile.activityLevel,
   );
   const [goal, setGoal] = useState<Goal | null>(profile.goal);
-  const [prefs, setPrefs] = useState<PreferencesDTO>({
-    ...preferences,
-    dietType: preferences.dietType ?? "omnivore",
-  });
+  const [prefs, setPrefs] = useState<PreferencesDTO>(preferences);
 
   const [picked, setPicked] = useState<string[]>([]);
   // Only offer meals that fit the diet chosen in step 3.
-  const pickable = starters.filter((r) => suitsDiet(r.tags, prefs.dietType));
+  const pickable = starters.filter((r) => suitsDiet(r.tags, prefs.eats));
 
   const draft = {
     ...body,
@@ -75,7 +72,7 @@ export function OnboardingFlow({
   const finish = useMutation({
     mutationFn: async () => {
       await api.updatePreferences({
-        dietType: prefs.dietType,
+        eats: prefs.eats,
         excludedIngredients: prefs.excludedIngredients,
         likedCuisines: prefs.likedCuisines,
       });

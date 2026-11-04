@@ -2,7 +2,12 @@
 
 import { z } from "zod";
 
-import { EQUIPMENT, MEAL_SLOTS } from "@/lib/db/enums";
+import {
+  ANIMAL_FOODS,
+  DIET_TYPES,
+  EQUIPMENT,
+  MEAL_SLOTS,
+} from "@/lib/db/enums";
 import { isIsoDate } from "@/lib/nutrition/dates";
 
 export const IsoDate = z.string().refine(isIsoDate, "Use YYYY-MM-DD");
@@ -119,9 +124,11 @@ const IngredientList = z
   .transform((list) => [...new Set(list)]);
 
 export const PreferencesUpdateSchema = z.object({
-  dietType: z
-    .enum(["omnivore", "vegetarian", "eggetarian", "vegan", "pescatarian"])
-    .nullable()
+  /** A preset, expanded to its animal foods when eats is not sent. */
+  dietType: z.enum(DIET_TYPES).nullable().optional(),
+  eats: z
+    .array(z.enum(ANIMAL_FOODS))
+    .max(ANIMAL_FOODS.length * 2)
     .optional(),
   excludedIngredients: IngredientList.optional(),
   dislikedIngredients: IngredientList.optional(),

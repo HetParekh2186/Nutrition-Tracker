@@ -93,10 +93,12 @@ async function main() {
             description: input.description,
             cuisine: input.cuisine,
             mealTypes: input.mealTypes,
-            tags: withDietTags(input.tags, [
-              ...input.ingredients.map((i) => i.displayText),
-              ...r.ingredients.map(([, usdaName]) => usdaName),
-            ]),
+            tags: withDietTags(
+              input.tags,
+              r.ingredients.map(
+                ([display, usdaName]) => `${display} ${usdaName}`,
+              ),
+            ),
             servings: input.servings,
             prepMinutes: input.prepMinutes,
             cookMinutes: input.cookMinutes,

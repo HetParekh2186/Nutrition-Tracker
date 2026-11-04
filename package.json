@@ -24,7 +24,8 @@
     "test:coverage": "vitest run --coverage",
     "seed:demo": "tsx scripts/seed-demo.ts",
     "seed:recipes": "tsx scripts/seed-recipes.ts",
-    "embed": "tsx scripts/embed.ts"
+    "embed": "tsx scripts/embed.ts",
+    "retag:diets": "tsx scripts/retag-diets.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.3.0",

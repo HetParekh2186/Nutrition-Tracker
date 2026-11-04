@@ -46,6 +46,7 @@ import { SLOT_LABELS } from "@/lib/diary/slots";
 import { defaultSlotForHour } from "@/lib/foods/units";
 import { formatAmount } from "@/lib/nutrition/format";
 import { scaleMacros } from "@/lib/nutrition/macros";
+import { displayTags } from "@/lib/recipes/diet";
 import type { RecipeDetailDTO } from "@/lib/recipes/types";
 
 function formatTimer(seconds: number): string {
@@ -377,7 +378,9 @@ export function RecipeView({
               <span className="num">{recipe.cookMinutes ?? 0}</span> min cook
             </span>
           ) : null}
-          {recipe.tags.length ? <span>{recipe.tags.join(" · ")}</span> : null}
+          {displayTags(recipe.tags).length ? (
+            <span>{displayTags(recipe.tags).join(" · ")}</span>
+          ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button

@@ -19,6 +19,7 @@ const ctx: ToolContext = {
   stepCount: 6,
   substitutions: [],
   excluded: ["shellfish"],
+  eats: ["eggs", "dairy", "honey"],
 };
 function deps(): ToolDeps {
   return {
@@ -89,6 +90,29 @@ describe("executeTool", () => {
       d,
     );
     expect(out.isError).toBe(true);
+    expect(d.saveProposal).not.toHaveBeenCalled();
+  });
+
+  it("refuses swaps outside the diet, even when only the match names it", async () => {
+    const d = deps();
+    vi.mocked(d.resolve).mockResolvedValueOnce({
+      foodId: 9,
+      name: "Beef, ground, 90% lean meat",
+      confidence: 0.9,
+    });
+    const out = await executeTool(
+      "propose_substitution",
+      {
+        ingredient_id: 11,
+        new_food_query: "lean mince",
+        quantity_g: 100,
+        reason: "x",
+      },
+      ctx,
+      d,
+    );
+    expect(out.isError).toBe(true);
+    expect(out.result).toMatch(/does not eat beef/);
     expect(d.saveProposal).not.toHaveBeenCalled();
   });
 

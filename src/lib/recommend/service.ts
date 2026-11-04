@@ -14,6 +14,7 @@ import { cosine } from "@/lib/embeddings/hash";
 import { daysBetween, localDate } from "@/lib/nutrition/dates";
 import { getPreferences, getProfile } from "@/lib/profile/repo";
 import { expandExclusions, wordStartPattern } from "@/lib/recipes/allergens";
+import { dietBreaks } from "@/lib/recipes/diet";
 import { summariesFor } from "@/lib/recipes/repo";
 
 import { slotBudget } from "./budget";
@@ -50,8 +51,6 @@ async function candidates(
     excluded.map((p) => sql`${p}`),
     sql`, `,
   )}]::text[]`;
-  const diet =
-    prefs.dietType && prefs.dietType !== "omnivore" ? prefs.dietType : null;
   const rows = await getDb().execute<Record<string, unknown>>(sql`
     select r.*,
            coalesce((select string_agg(ri.display_text || ' ' || coalesce(f.name, ''), ' | ')
@@ -62,7 +61,6 @@ async function candidates(
      where (r.owner_id is null or r.owner_id = ${userId})
        and ${slot} = any(r.meal_types)
        and exists (select 1 from recipe_nutrition rn where rn.recipe_id = r.id)
-       ${diet ? sql`and ${diet} = any(r.tags)` : sql``}
        ${
          prefs.maxCookMinutes
            ? sql`and coalesce(r.prep_minutes, 0) + coalesce(r.cook_minutes, 0) <= ${prefs.maxCookMinutes}`
@@ -79,8 +77,15 @@ async function candidates(
            : sql``
        }
   `);
+  // The diet is read from the ingredients themselves (display text and USDA
+  // names), so it holds for recipes tagged before a rule existed.
+  const allowed = rows.filter(
+    (r) =>
+      dietBreaks([r.title as string, r.ingredient_text as string], prefs.eats)
+        .length === 0,
+  );
   // Map snake_case columns back to the schema's camelCase shape.
-  return rows.map((r) => ({
+  return allowed.map((r) => ({
     id: r.id as string,
     ownerId: (r.owner_id as string | null) ?? null,
     parentRecipeId: (r.parent_recipe_id as string | null) ?? null,
