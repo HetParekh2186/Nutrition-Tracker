@@ -80,7 +80,8 @@ The browser and the nightly cron both call the same Next.js route handlers, whic
 - **Macros are recomputed on the server, never trusted from the LLM.** When Claude drafts a recipe it names each ingredient and its weight in grams. The server matches every ingredient to a USDA food and computes the nutrition itself. If the result misses the target, Claude gets one revision with the real numbers. A model can describe food well and still be confidently wrong about the protein in it.
 - **Ranking is a transparent formula, not an LLM.** Suggestions come from SQL filters, a weighted score and a diversity pass. It is fast, free to run, unit-tested, and every card can say exactly why it ranked where it did.
 - **USDA data is imported, not called live.** Foundation and SR Legacy foods load once into Postgres, with trigram and full-text indexes. Search is a local query instead of a network call, recipe nutrition can join food data, and the app does not depend on a third-party API being up.
-- **Hard rules stay hard.** Diet, allergies and excluded ingredients filter candidates in SQL. Exclusions expand to whole families, so "shellfish" also removes shrimp and prawns.
+- **Hard rules stay hard.** Diet, allergies and excluded ingredients filter candidates before scoring. Exclusions expand to whole families, so "shellfish" also removes shrimp and prawns.
+- **Diets are sets, not labels.** A diet is the set of animal foods you eat (beef, pork, lamb, chicken, other poultry, fish, shellfish, eggs, dairy, honey). Presets fill the set in one click, and anything between them works: a vegetarian who eats chicken and eggs is just that set. Ingredients are read for hidden animal foods too, so fish sauce counts as fish, gelatin as beef and pork, and pesto as dairy. Generated recipes and Cook Mode swaps are checked against the same rule.
 - **Row-level security on every table.** Each user's data is isolated in Postgres itself, not just in application code.
 - **Counts stay honest.** Missing nutrient values are shown as unknown, not zero, and each total says how many foods had data.
 
@@ -130,7 +131,7 @@ The top 30 are then reordered with Maximal Marginal Relevance (λ = 0.7) so the 
 
 - **App:** Next.js 15 (App Router), React 19, TypeScript in strict mode
 - **UI:** Tailwind CSS 4 with design tokens, shadcn/ui on Radix, Motion, TanStack Query, cmdk, Vaul, Recharts
-- **Data:** Supabase (Postgres 17, Auth with magic links, row-level security), Drizzle ORM, pgvector, pg_trgm
+- **Data:** Supabase (Postgres 17, Auth with email and password or magic links, row-level security), Drizzle ORM, pgvector, pg_trgm
 - **AI:** Claude through the Anthropic SDK (structured outputs validated with Zod, streaming tool use in Cook Mode), Voyage AI embeddings
 - **Food data:** USDA FoodData Central (Foundation and SR Legacy), Open Food Facts for barcodes
 - **Quality:** Vitest, Playwright, axe-core, ESLint, Prettier, Husky, commitlint, GitHub Actions
@@ -145,6 +146,7 @@ cp .env.example .env.local    # fill in the values below
 pnpm db:migrate               # schema, row-level security, extensions
 pnpm import:usda              # downloads and loads USDA foods (a few minutes)
 pnpm seed:recipes             # starter recipes
+pnpm retag:diets              # recompute recipe diet tags after rule changes
 pnpm demo:user && pnpm seed:demo   # optional: the demo account and its history
 pnpm dev
 ```

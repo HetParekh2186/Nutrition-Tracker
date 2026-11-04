@@ -6,7 +6,9 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 
 import type { NutrientMap } from "@/lib/nutrition/math";
+import type { AnimalFood } from "@/lib/db/enums";
 import { expandExclusion, wordStartPattern } from "@/lib/recipes/allergens";
+import { ANIMAL_FOOD_NAMES, dietBreaks } from "@/lib/recipes/diet";
 
 import {
   substitutionDiff,
@@ -139,6 +141,8 @@ export type ToolContext = {
   stepCount: number;
   substitutions: Substitution[];
   excluded: string[];
+  /** Animal foods the cook eats; a swap may not add any other. */
+  eats: AnimalFood[];
 };
 
 export type ToolDeps = {
@@ -244,6 +248,17 @@ export async function executeTool(
       if (!match || match.confidence < MIN_CONFIDENCE) {
         return {
           result: `Could not find "${input.new_food_query}" in the food database; try a plainer name.`,
+          isError: true,
+        };
+      }
+      // The diet is a hard rule as well; check the matched name too.
+      const offDiet = dietBreaks(
+        [`${input.new_food_query} ${match.name}`],
+        ctx.eats,
+      );
+      if (offDiet.length) {
+        return {
+          result: `The cook does not eat ${offDiet.map((g) => ANIMAL_FOOD_NAMES[g]).join(", ")}; suggest something else.`,
           isError: true,
         };
       }

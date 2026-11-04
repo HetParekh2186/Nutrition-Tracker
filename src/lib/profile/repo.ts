@@ -12,6 +12,7 @@ import {
   users,
 } from "@/lib/db/schema";
 import { NUTRIENTS } from "@/lib/nutrition/catalog";
+import { DIET_PRESETS, normalizeEats, presetFor } from "@/lib/recipes/diet";
 import { localDate } from "@/lib/nutrition/dates";
 import {
   computeTargets,
@@ -162,8 +163,10 @@ export async function getPreferences(userId: string): Promise<PreferencesDTO> {
     .select()
     .from(dietaryPreferences)
     .where(eq(dietaryPreferences.userId, userId));
+  const eats = row ? normalizeEats(row.eats) : [...DIET_PRESETS.omnivore];
   return {
-    dietType: row?.dietType ?? null,
+    dietType: presetFor(eats),
+    eats,
     excludedIngredients: row?.excludedIngredients ?? [],
     dislikedIngredients: row?.dislikedIngredients ?? [],
     likedCuisines: row?.likedCuisines ?? [],
@@ -179,8 +182,21 @@ export async function getPreferences(userId: string): Promise<PreferencesDTO> {
 
 export async function updatePreferences(
   userId: string,
-  patch: Partial<PreferencesDTO>,
+  input: Partial<PreferencesDTO>,
 ): Promise<PreferencesDTO> {
+  // eats is the rule; dietType is kept as the preset it matches. A bare
+  // dietType (older clients) expands to its preset.
+  const { dietType, eats: rawEats, ...rest } = input;
+  const eats =
+    rawEats !== undefined
+      ? normalizeEats(rawEats)
+      : dietType !== undefined
+        ? [...DIET_PRESETS[dietType ?? "omnivore"]]
+        : undefined;
+  const patch = {
+    ...rest,
+    ...(eats ? { eats, dietType: presetFor(eats) } : {}),
+  };
   await getDb()
     .insert(dietaryPreferences)
     .values({ userId, ...patch })

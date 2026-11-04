@@ -31,6 +31,7 @@ import { anonRole, authenticatedRole } from "drizzle-orm/supabase";
 
 import {
   ACTIVITY_LEVELS,
+  ANIMAL_FOODS,
   DIET_TYPES,
   FOOD_SOURCES,
   GOALS,
@@ -143,7 +144,14 @@ export const dietaryPreferences = pgTable(
     userId: uuid()
       .primaryKey()
       .references(() => users.id, { onDelete: "cascade" }),
-    dietType: text({ enum: DIET_TYPES }),
+    dietType: text({ enum: DIET_TYPES }), // the preset eats matches, if any
+    // Animal foods the user eats; the hard diet rule. Defaults to all.
+    eats: text({ enum: ANIMAL_FOODS })
+      .array()
+      .notNull()
+      .default(
+        sql`'{beef,pork,lamb,chicken,poultry,fish,shellfish,eggs,dairy,honey}'`,
+      ),
     excludedIngredients: text()
       .array()
       .notNull()

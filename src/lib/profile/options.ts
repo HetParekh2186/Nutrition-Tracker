@@ -1,8 +1,7 @@
 // Labels and descriptions for profile and preference choices.
 
+import type { AnimalFood, DietType } from "@/lib/db/enums";
 import type { ActivityLevel, Goal, Sex } from "@/lib/nutrition/targets";
-
-import type { PreferencesDTO } from "./types";
 
 export const SEX_CHOICES: { value: Sex; label: string; description: string }[] =
   [
@@ -70,7 +69,7 @@ export const GOAL_CHOICES: {
 ];
 
 export const DIET_CHOICES: {
-  value: NonNullable<PreferencesDTO["dietType"]>;
+  value: DietType;
   label: string;
   description: string;
 }[] = [
@@ -87,6 +86,38 @@ export const DIET_CHOICES: {
     description: "Eggs and dairy, no meat or fish",
   },
   { value: "vegan", label: "Vegan", description: "No animal products" },
+];
+
+/** The diet switches, grouped the way people think about them. */
+export const ANIMAL_FOOD_GROUPS: {
+  label: string;
+  foods: { value: AnimalFood; label: string }[];
+}[] = [
+  {
+    label: "Meat",
+    foods: [
+      { value: "chicken", label: "Chicken" },
+      { value: "poultry", label: "Turkey and duck" },
+      { value: "beef", label: "Beef" },
+      { value: "pork", label: "Pork" },
+      { value: "lamb", label: "Lamb and goat" },
+    ],
+  },
+  {
+    label: "Seafood",
+    foods: [
+      { value: "fish", label: "Fish" },
+      { value: "shellfish", label: "Shellfish" },
+    ],
+  },
+  {
+    label: "Other animal foods",
+    foods: [
+      { value: "eggs", label: "Eggs" },
+      { value: "dairy", label: "Dairy" },
+      { value: "honey", label: "Honey" },
+    ],
+  },
 ];
 
 export const CUISINE_SUGGESTIONS = [

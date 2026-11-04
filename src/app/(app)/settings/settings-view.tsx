@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { BodyFields, type BodyDraft } from "@/components/profile/body-fields";
 import { ChoiceCards } from "@/components/profile/choice-cards";
+import { SetPasswordForm } from "@/components/auth/set-password-form";
 import { PreferencesFields } from "@/components/profile/preferences-fields";
 import { TargetPreview } from "@/components/profile/target-preview";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
@@ -248,6 +249,16 @@ export function SettingsView({
           </div>
         </form>
       </Section>
+
+      {profile.isDemo ? null : (
+        <Section
+          id="password-heading"
+          title="Password"
+          description="Set or change the password you sign in with. Email sign-in links keep working either way."
+        >
+          <SetPasswordForm from="settings" submitLabel="Save password" />
+        </Section>
+      )}
 
       <Section
         id="display-heading"

@@ -5,6 +5,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { RecipeInput } from "@/lib/api/schemas";
+import { ANIMAL_FOODS } from "@/lib/db/enums";
 import fixture from "@/lib/llm/fixtures/recipe-chipotle-bowl.json";
 import { GeneratedRecipe } from "@/lib/llm/schemas";
 import { N } from "@/lib/nutrition/catalog";
@@ -92,7 +93,7 @@ const CTX: DraftContext = {
   request: "high protein mexican dinner",
   servings: 2,
   preferences: {
-    dietType: "omnivore",
+    eats: [...ANIMAL_FOODS],
     excluded: [],
     disliked: [],
     likedCuisines: ["mexican"],
@@ -220,6 +221,33 @@ describe("runGeneration", () => {
       }),
     ).rejects.toThrow(/lime/);
     expect(saved).toHaveLength(0);
+  });
+
+  it("treats the diet as a hard rule too", async () => {
+    const { deps, saved } = makeDeps([recorded, recorded]);
+    await expect(
+      runGeneration(deps, {
+        ...CTX,
+        preferences: { ...CTX.preferences, eats: ["eggs", "dairy", "honey"] },
+      }),
+    ).rejects.toThrow(/chicken, which your diet does not include/);
+    const revision = vi.mocked(deps.draft).mock.calls[1]![1]!;
+    expect(revision.problems.join(" ")).toMatch(
+      /uses chicken, which their diet does not allow/,
+    );
+    expect(saved).toHaveLength(0);
+  });
+
+  it("lets a vegetarian who eats chicken have the chicken bowl", async () => {
+    const { deps, saved } = makeDeps([recorded]);
+    await runGeneration(deps, {
+      ...CTX,
+      preferences: {
+        ...CTX.preferences,
+        eats: ["chicken", "eggs", "dairy", "honey"],
+      },
+    });
+    expect(saved).toHaveLength(1);
   });
 });
 

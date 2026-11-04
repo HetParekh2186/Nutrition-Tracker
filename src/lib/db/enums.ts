@@ -28,6 +28,24 @@ export const DIET_TYPES = [
   "pescatarian",
 ] as const;
 
+/**
+ * The animal foods a diet can allow, one switch each. Diets are sets of
+ * these, so "vegetarian who eats chicken and eggs" is just a set, not a
+ * named type. "poultry" is poultry other than chicken.
+ */
+export const ANIMAL_FOODS = [
+  "beef",
+  "pork",
+  "lamb",
+  "chicken",
+  "poultry",
+  "fish",
+  "shellfish",
+  "eggs",
+  "dairy",
+  "honey",
+] as const;
+
 export const NUTRIENT_CATEGORIES = [
   "energy",
   "macro",
@@ -77,6 +95,8 @@ export const INTERACTION_EVENTS = [
 ] as const;
 
 export type Equipment = (typeof EQUIPMENT)[number];
+export type AnimalFood = (typeof ANIMAL_FOODS)[number];
+export type DietType = (typeof DIET_TYPES)[number];
 export type FoodSource = (typeof FOOD_SOURCES)[number];
 export type MealSlot = (typeof MEAL_SLOTS)[number];
 export type LoggedVia = (typeof LOGGED_VIA)[number];

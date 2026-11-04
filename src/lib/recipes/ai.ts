@@ -13,6 +13,7 @@ import { getPreferences } from "@/lib/profile/repo";
 import { slotBudget } from "@/lib/recommend/budget";
 import type { MealSlot } from "@/lib/db/enums";
 
+import { dietRules } from "./diet";
 import type { DraftContext, GenerateDeps, Revision } from "./generate";
 import { createRecipe } from "./repo";
 
@@ -39,7 +40,7 @@ function userMessage(ctx: DraftContext): string {
     ctx.slot ? `Meal: ${ctx.slot}.` : null,
     `Servings: ${ctx.servings}.`,
     describeTarget(ctx.target),
-    `Diet: ${p.dietType ?? "no restrictions"}.`,
+    dietRules(p.eats),
     p.excluded.length ? `Never use: ${p.excluded.join(", ")}.` : null,
     p.disliked.length ? `Avoid if possible: ${p.disliked.join(", ")}.` : null,
     p.likedCuisines.length
@@ -136,7 +137,7 @@ export async function draftContext(
     servings: options.servings,
     target,
     preferences: {
-      dietType: prefs.dietType,
+      eats: prefs.eats,
       excluded: prefs.excludedIngredients,
       disliked: prefs.dislikedIngredients,
       likedCuisines: prefs.likedCuisines,

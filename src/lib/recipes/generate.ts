@@ -4,7 +4,7 @@
 // pipeline is testable without the API or the database.
 
 import type { RecipeInput } from "@/lib/api/schemas";
-import type { MealSlot } from "@/lib/db/enums";
+import type { AnimalFood, MealSlot } from "@/lib/db/enums";
 import type { GeneratedRecipe } from "@/lib/llm/schemas";
 import { formatAmount } from "@/lib/nutrition/format";
 import type { Macros } from "@/lib/nutrition/macros";
@@ -12,6 +12,7 @@ import type { NutrientMap } from "@/lib/nutrition/math";
 
 import { expandExclusion, wordStartPattern } from "./allergens";
 import { needsRevision, recipeNutrition } from "./compute";
+import { ANIMAL_FOOD_NAMES, dietBreaks } from "./diet";
 
 /** Below this, an ingredient is saved unmatched for the user to fix. */
 export const MIN_MATCH_CONFIDENCE = 0.5;
@@ -22,7 +23,8 @@ export type DraftContext = {
   servings: number;
   target?: Partial<Macros> | undefined;
   preferences: {
-    dietType: string | null;
+    /** Animal foods they eat; anything else breaks the diet. */
+    eats: AnimalFood[];
     excluded: string[];
     disliked: string[];
     likedCuisines: string[];
@@ -84,9 +86,29 @@ export function excludedHits(
   );
 }
 
+/**
+ * Animal foods in the draft that the diet does not allow, checked against
+ * the matched USDA names too ("sliced sirloin" is "Beef, top sirloin").
+ */
+export function dietHits(
+  draft: GeneratedRecipe,
+  eats: AnimalFood[],
+  matchedNames: string[] = [],
+): string[] {
+  // One string per ingredient, so "lean mince" reads as the beef it matched.
+  return dietBreaks(
+    draft.ingredients.map(
+      (i, k) => `${i.display_text} ${i.food_query} ${matchedNames[k] ?? ""}`,
+    ),
+    eats,
+  ).map((g) => ANIMAL_FOOD_NAMES[g]);
+}
+
 type Matched = {
   input: RecipeInput;
   unmatched: string[];
+  /** USDA name matched for each ingredient ("" when none), for the diet check. */
+  matchedNames: string[];
   nutrition: ReturnType<typeof recipeNutrition>;
 };
 
@@ -138,6 +160,9 @@ async function matchAndCompute(
     unmatched: ingredients
       .filter((i) => i.foodId === null)
       .map((i) => i.displayText),
+    matchedNames: resolutions.map((r) =>
+      r && r.confidence >= MIN_MATCH_CONFIDENCE ? r.name : "",
+    ),
     nutrition,
   };
 }
@@ -146,6 +171,7 @@ function describeProblems(
   computed: Macros,
   target: Partial<Macros> | undefined,
   excluded: string[],
+  offDiet: string[],
 ): string[] {
   const problems: string[] = [];
   if (target && needsRevision(computed, target)) {
@@ -169,6 +195,11 @@ function describeProblems(
       `It uses excluded ingredients: ${excluded.join(", ")}. Remove them.`,
     );
   }
+  if (offDiet.length) {
+    problems.push(
+      `It uses ${offDiet.join(", ")}, which their diet does not allow. Replace them.`,
+    );
+  }
   return problems;
 }
 
@@ -184,10 +215,12 @@ export async function runGeneration(
   deps.onStatus?.("Matching ingredients to USDA foods");
   let matched = await matchAndCompute(deps, draft, ctx.servings);
   let excluded = excludedHits(draft, ctx.preferences.excluded);
+  let offDiet = dietHits(draft, ctx.preferences.eats, matched.matchedNames);
   let problems = describeProblems(
     matched.nutrition.macros,
     ctx.target,
     excluded,
+    offDiet,
   );
   let revised = false;
 
@@ -202,11 +235,22 @@ export async function runGeneration(
     });
     matched = await matchAndCompute(deps, draft, ctx.servings);
     excluded = excludedHits(draft, ctx.preferences.excluded);
-    problems = describeProblems(matched.nutrition.macros, ctx.target, excluded);
+    offDiet = dietHits(draft, ctx.preferences.eats, matched.matchedNames);
+    problems = describeProblems(
+      matched.nutrition.macros,
+      ctx.target,
+      excluded,
+      offDiet,
+    );
   }
   if (excluded.length) {
     throw new Error(
       `The recipe kept using ${excluded.join(", ")}, which you never want suggested. Try rephrasing the request.`,
+    );
+  }
+  if (offDiet.length) {
+    throw new Error(
+      `The recipe kept using ${offDiet.join(", ")}, which your diet does not include. Try rephrasing the request.`,
     );
   }
 

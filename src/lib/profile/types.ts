@@ -1,6 +1,6 @@
 // Profile, preference and target shapes for the API. Client-safe.
 
-import type { DIET_TYPES, Equipment } from "@/lib/db/enums";
+import type { AnimalFood, DietType, Equipment } from "@/lib/db/enums";
 import type { NutrientCategory, NutrientUnit } from "@/lib/nutrition/catalog";
 import type { TargetSource } from "@/lib/nutrition/dri";
 import type { ActivityLevel, Goal, Sex } from "@/lib/nutrition/targets";
@@ -21,7 +21,10 @@ export type ProfileDTO = {
 };
 
 export type PreferencesDTO = {
-  dietType: (typeof DIET_TYPES)[number] | null;
+  /** The preset that eats matches exactly; null for a custom diet. */
+  dietType: DietType | null;
+  /** Animal foods the user eats. The hard diet rule. */
+  eats: AnimalFood[];
   excludedIngredients: string[];
   dislikedIngredients: string[];
   likedCuisines: string[];

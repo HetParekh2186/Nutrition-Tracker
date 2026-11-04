@@ -1,4 +1,8 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+
+import { safeNextPath } from "@/lib/auth/paths";
+import { getUserId } from "@/lib/auth/session";
 
 import { DemoButton } from "./demo-button";
 import { LoginForm } from "./login-form";
@@ -11,6 +15,8 @@ export default async function LoginPage({
   searchParams: Promise<{ next?: string; error?: string }>;
 }) {
   const { next, error } = await searchParams;
+  // Already signed in: carry on to where they were going.
+  if (await getUserId()) redirect(safeNextPath(next));
 
   return (
     <main className="grid min-h-dvh place-items-center px-4 py-12">
@@ -20,7 +26,7 @@ export default async function LoginPage({
         </p>
         <h1 className="mt-2 text-xl">Sign in</h1>
         <p className="mt-2 mb-8 text-sm text-ink-muted">
-          No password. We email you a link that signs you in.
+          Use your password, or get a sign-in link by email.
         </p>
         {error ? (
           <p
@@ -29,7 +35,7 @@ export default async function LoginPage({
           >
             {error === "demo"
               ? "The demo account is not available right now."
-              : "That link has expired or was already used. Request a new one."}
+              : "That link has expired or was already used. Request a new one. If you were confirming a new account, try signing in with your password."}
           </p>
         ) : null}
         <div className="rounded-xl border border-border bg-surface p-6">
