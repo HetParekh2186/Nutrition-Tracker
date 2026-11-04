@@ -167,6 +167,17 @@ function SearchStep({
             className="size-4 animate-spin text-ink-muted"
           />
         ) : null}
+        {/* Phones scan more than they type barcodes: one tap to the camera. */}
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={() => onBarcode("")}
+          aria-label="Scan a barcode"
+          className="-mr-2 shrink-0 md:hidden"
+        >
+          <ScanBarcode aria-hidden />
+        </Button>
       </div>
       <Command.List className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2 md:max-h-[min(60vh,28rem)]">
         {/* The custom-food row is always present, so cmdk's Empty never
@@ -259,7 +270,7 @@ function SearchStep({
             )}
           >
             <ScanBarcode aria-hidden className="size-4" />
-            {isBarcode ? `Look up barcode ${q}` : "Look up a barcode"}
+            {isBarcode ? `Look up barcode ${q}` : "Scan or type a barcode"}
           </Command.Item>
           <Command.Item
             value="create-custom-food"
@@ -457,6 +468,7 @@ function Panel({
   onDone: () => void;
 }) {
   const [step, setStep] = useState<Step>(initialStep ?? { kind: "search" });
+  const desktop = useMediaQuery(DESKTOP);
 
   if (step.kind === "meal") {
     return (
@@ -498,6 +510,7 @@ function Panel({
     return (
       <BarcodeStep
         initialCode={step.code}
+        autoScan={!desktop}
         onBack={() => setStep({ kind: "search" })}
         onFound={(hit) => setStep({ kind: "amount", hit, loggedVia: "search" })}
       />
