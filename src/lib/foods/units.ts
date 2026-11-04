@@ -61,3 +61,55 @@ export function defaultSlotForHour(hour: number): MealSlot {
   if (hour >= 17 && hour < 22) return "dinner";
   return "snack";
 }
+
+/** "2", "0.5", "1.33": a quantity rounded for display, no trailing zeros. */
+export function formatQuantity(quantity: number): string {
+  return String(Number(quantity.toFixed(2)));
+}
+
+/**
+ * The unit an entry was logged in, read back from its portion_label ("2 ×
+ * 1 serving", "1 large", "3 oz"), with the quantity that gives its grams.
+ * Falls back to grams when the label names no option.
+ */
+export function amountFromEntry(
+  quantityG: number,
+  portionLabel: string | null,
+  options: PortionOption[],
+): { quantity: number; option: PortionOption } {
+  const grams = options.find((o) => o.key === "g")!;
+  const label = portionLabel?.trim();
+  const named = label
+    ? /^[\d.]+ oz$/.test(label)
+      ? options.find((o) => o.key === "oz")
+      : options.find(
+          (o) =>
+            o.key !== "g" &&
+            o.key !== "oz" &&
+            (label === o.label || label.endsWith(` × ${o.label}`)),
+        )
+    : undefined;
+  const option = named ?? grams;
+  return { quantity: quantityG / option.grams, option };
+}
+
+/**
+ * The same weight in the other units, for "= 2 × 1 serving · 17.6 oz".
+ * Grams always come first, since every other unit is defined by them.
+ */
+export function equivalents(
+  grams: number,
+  options: PortionOption[],
+  currentKey: string,
+  limit = 3,
+): string[] {
+  return options
+    .filter((o) => o.key !== currentKey)
+    .sort((a, b) => Number(b.key === "g") - Number(a.key === "g"))
+    .slice(0, limit)
+    .map((o) => {
+      const q = formatQuantity(grams / o.grams);
+      if (o.key === "g" || o.key === "oz") return `${q} ${o.label}`;
+      return `${q} × ${o.label}`;
+    });
+}
