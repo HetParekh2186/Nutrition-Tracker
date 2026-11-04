@@ -211,7 +211,7 @@ function EntryForm({
               value={unit.key}
               onChange={(e) => changeUnit(e.target.value)}
               disabled={options.length < 2}
-              className="h-8 min-w-0 rounded-lg border border-input bg-surface-2 px-2 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-70"
+              className="h-8 min-w-0 rounded-lg border border-input bg-surface-2 px-2 text-base outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-70 md:text-sm"
             >
               {options.map((o) => (
                 <option key={o.key} value={o.key}>

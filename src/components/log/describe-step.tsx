@@ -99,7 +99,7 @@ function ItemRow({
             onChange={(e) =>
               onChange({ ...row, pick: Number(e.target.value), grams: null })
             }
-            className="h-8 min-w-0 rounded-lg border border-input bg-surface-2 px-2 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="h-8 min-w-0 rounded-lg border border-input bg-surface-2 px-2 text-base outline-none focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
           >
             {item.candidates.map((c, i) => (
               <option key={c.food.id} value={i}>

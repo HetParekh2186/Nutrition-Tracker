@@ -47,3 +47,36 @@ export function OfflineNotice() {
     </div>
   );
 }
+
+/**
+ * Expose the part of the screen the on-screen keyboard leaves visible, as
+ * CSS variables on <html>. iOS Safari draws the keyboard over fixed
+ * elements instead of resizing the page, so sheets and dialogs use these
+ * to sit above it: --vv-top and --vv-height are the visible area, and
+ * --vv-bottom is how much of the page the keyboard covers.
+ */
+export function TrackVisibleViewport() {
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const root = document.documentElement;
+    const update = () => {
+      const layoutHeight = root.clientHeight;
+      const covered = Math.max(0, layoutHeight - vv.offsetTop - vv.height);
+      root.style.setProperty("--vv-top", `${vv.offsetTop}px`);
+      root.style.setProperty("--vv-height", `${vv.height}px`);
+      root.style.setProperty("--vv-bottom", `${covered}px`);
+    };
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+      for (const name of ["--vv-top", "--vv-height", "--vv-bottom"]) {
+        root.style.removeProperty(name);
+      }
+    };
+  }, []);
+  return null;
+}

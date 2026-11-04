@@ -200,7 +200,7 @@ export function SettingsView({
               id="timezone"
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
-              className="h-8 rounded-lg border border-input bg-surface-2 px-2 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="h-8 rounded-lg border border-input bg-surface-2 px-2 text-base outline-none focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
             >
               {timezones.map((tz) => (
                 <option key={tz} value={tz}>
