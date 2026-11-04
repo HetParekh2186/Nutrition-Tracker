@@ -39,3 +39,11 @@ export type FoodSearchResult = {
   recent: FoodHit[];
   frequent: FoodHit[];
 };
+
+/** A food in My foods: one the user created or has logged at least once. */
+export type MyFoodDTO = FoodHit & {
+  isCustom: boolean;
+  lastLoggedAt: string | null;
+};
+
+export type MyFoodsSort = "recent" | "frequent" | "name";

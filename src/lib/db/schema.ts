@@ -468,6 +468,60 @@ export const recipeNutrition = pgTable(
   ],
 );
 
+// ========== Saved meals ==========
+
+/** A named group of foods and recipes logged together, e.g. "Usual breakfast". */
+export const meals = pgTable(
+  "meals",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    ownerId: uuid()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text().notNull(),
+    createdAt: createdAt(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("meals_owner").on(t.ownerId),
+    ownRows("meals_own", sql`${t.ownerId}`),
+  ],
+);
+
+const mealOwned = (mealId: SQL) =>
+  sql`exists (select 1 from meals m where m.id = ${mealId} and m.owner_id = ${uid})`;
+
+export const mealItems = pgTable(
+  "meal_items",
+  {
+    id: bigserial({ mode: "number" }).primaryKey(),
+    mealId: uuid()
+      .notNull()
+      .references(() => meals.id, { onDelete: "cascade" }),
+    position: integer().notNull(),
+    foodId: bigint({ mode: "number" }).references(() => foods.id, {
+      onDelete: "cascade",
+    }),
+    recipeId: uuid().references(() => recipes.id, { onDelete: "cascade" }),
+    quantityG: num(),
+    portionLabel: text(),
+    servings: num(),
+  },
+  (t) => [
+    check(
+      "meal_items_food_or_recipe",
+      sql`(${t.foodId} is not null and ${t.quantityG} > 0 and ${t.recipeId} is null) or (${t.recipeId} is not null and ${t.servings} > 0 and ${t.foodId} is null)`,
+    ),
+    index("meal_items_meal").on(t.mealId),
+    pgPolicy("meal_items_own", {
+      for: "all",
+      to: authenticatedRole,
+      using: mealOwned(sql`${t.mealId}`),
+      withCheck: mealOwned(sql`${t.mealId}`),
+    }),
+  ],
+);
+
 // ========== Activity ==========
 
 export const diaryEntries = pgTable(
@@ -496,7 +550,7 @@ export const diaryEntries = pgTable(
     ),
     check(
       "diary_entries_via",
-      sql`${t.loggedVia} in ('search','natural_language','recent','copy','recipe','cook_mode')`,
+      sql`${t.loggedVia} in ('search','natural_language','recent','copy','recipe','cook_mode','meal')`,
     ),
     check(
       "diary_entries_food_or_recipe",

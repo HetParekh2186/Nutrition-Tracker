@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Apple,
   CalendarDays,
   BookOpen,
   ChartColumn,
@@ -23,12 +24,31 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export type NavItem = { href: string; label: string; icon: ReactNode };
+export type NavItem = {
+  href: string;
+  label: string;
+  icon: ReactNode;
+  /** Left out of the phone's bottom bar, which has room for five. */
+  desktopOnly?: boolean;
+  /** Other sections this tab stands for where it is the only way in. */
+  phoneAlso?: string[];
+};
 
 export const NAV: NavItem[] = [
   { href: "/today", label: "Today", icon: <CalendarDays aria-hidden /> },
   { href: "/for-you", label: "For You", icon: <Sparkles aria-hidden /> },
-  { href: "/recipes", label: "Recipes", icon: <BookOpen aria-hidden /> },
+  {
+    href: "/foods",
+    label: "Foods",
+    icon: <Apple aria-hidden />,
+    phoneAlso: ["/recipes"],
+  },
+  {
+    href: "/recipes",
+    label: "Recipes",
+    icon: <BookOpen aria-hidden />,
+    desktopOnly: true,
+  },
   { href: "/insights", label: "Insights", icon: <ChartColumn aria-hidden /> },
   { href: "/settings", label: "Settings", icon: <Settings aria-hidden /> },
 ];
@@ -82,6 +102,8 @@ export function AppShell({
   const pathname = usePathname();
   const active = (href: string) =>
     pathname === href || pathname.startsWith(`${href}/`);
+  const activeOnPhone = (item: NavItem) =>
+    active(item.href) || (item.phoneAlso ?? []).some(active);
 
   return (
     <div className="min-h-dvh pb-20 md:pb-0">
@@ -143,14 +165,14 @@ export function AppShell({
         className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-bg pb-[env(safe-area-inset-bottom)] md:hidden"
       >
         <ul className="flex h-16 items-stretch justify-around">
-          {NAV.map((item) => (
+          {NAV.filter((item) => !item.desktopOnly).map((item) => (
             <li key={item.href} className="flex">
               <Link
                 href={item.href}
-                aria-current={active(item.href) ? "page" : undefined}
+                aria-current={activeOnPhone(item) ? "page" : undefined}
                 className={cn(
                   "flex min-w-16 flex-col items-center justify-center gap-1 px-3 text-xs [&_svg]:size-5",
-                  active(item.href) ? "text-ink" : "text-ink-muted",
+                  activeOnPhone(item) ? "text-ink" : "text-ink-muted",
                 )}
               >
                 {item.icon}

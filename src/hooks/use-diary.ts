@@ -27,6 +27,8 @@ export const keys = {
   summary: (date: string) => ["summary", date] as const,
   search: (q: string) => ["food-search", q] as const,
   food: (id: number) => ["food", id] as const,
+  meals: ["meals"] as const,
+  myFoods: ["my-foods"] as const,
 };
 
 export function useDiary(date: string) {
@@ -43,11 +45,12 @@ export function useDaySummary(date: string) {
   });
 }
 
-function invalidateDay(qc: QueryClient, date: string) {
+export function invalidateDay(qc: QueryClient, date: string) {
   return Promise.all([
     qc.invalidateQueries({ queryKey: keys.diary(date) }),
     qc.invalidateQueries({ queryKey: keys.summary(date) }),
     qc.invalidateQueries({ queryKey: ["food-search", ""] }),
+    qc.invalidateQueries({ queryKey: keys.myFoods }),
   ]);
 }
 

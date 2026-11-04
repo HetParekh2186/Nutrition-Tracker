@@ -26,12 +26,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { keys, useAddEntry } from "@/hooks/use-diary";
 import { DESKTOP, useMediaQuery } from "@/hooks/use-media-query";
+import { useMeals } from "@/hooks/use-meals";
 import { api } from "@/lib/client/api";
 import type { MealSlot } from "@/lib/db/enums";
 import { SLOT_LABELS } from "@/lib/diary/slots";
 import { cn } from "@/lib/utils";
 import { defaultAmount, macrosForGrams } from "@/lib/foods/preview";
 import type { FoodHit } from "@/lib/foods/types";
+import type { MealDTO } from "@/lib/meals/types";
 import {
   defaultSlotForHour,
   gramsFor,
@@ -43,6 +45,7 @@ import {
 import { BarcodeStep } from "./barcode-step";
 import { CustomFoodForm } from "./custom-food-form";
 import { DescribeStep } from "./describe-step";
+import { MealStep } from "./meal-step";
 import { SlotPicker } from "./slot-picker";
 
 const SOURCE_LABEL: Record<FoodHit["source"], string> = {
@@ -62,8 +65,9 @@ function useDebounced<T>(value: T, ms: number): T {
   return debounced;
 }
 
-type Step =
+export type Step =
   | { kind: "search" }
+  | { kind: "meal"; meal: MealDTO }
   | { kind: "amount"; hit: FoodHit; loggedVia: "search" | "recent" }
   | { kind: "custom" }
   | { kind: "describe"; text: string }
@@ -96,11 +100,13 @@ function looksDescribed(q: string): boolean {
 
 function SearchStep({
   onPick,
+  onMeal,
   onCustom,
   onDescribe,
   onBarcode,
 }: {
   onPick: (hit: FoodHit, via: "search" | "recent") => void;
+  onMeal: (meal: MealDTO) => void;
   onCustom: () => void;
   onDescribe: (text: string) => void;
   onBarcode: (code: string) => void;
@@ -114,6 +120,11 @@ function SearchStep({
     staleTime: 30_000,
   });
   const showingStale = data?.query !== q;
+  // Saved meals are few, so they are matched here rather than on the server.
+  const { data: allMeals } = useMeals();
+  const meals = (allMeals ?? [])
+    .filter((m) => !q || m.name.toLowerCase().includes(q.toLowerCase()))
+    .slice(0, q ? 5 : 3);
   const isBarcode = /^\d{8,14}$/.test(q.replace(/[\s-]/g, ""));
 
   const groups: {
@@ -160,7 +171,7 @@ function SearchStep({
       <Command.List className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2 md:max-h-[min(60vh,28rem)]">
         {/* The custom-food row is always present, so cmdk's Empty never
             shows; report search state explicitly instead. */}
-        {groups.every((g) => g.hits.length === 0) ? (
+        {groups.every((g) => g.hits.length === 0) && meals.length === 0 ? (
           <p
             role="status"
             className="px-3 py-6 text-center text-sm text-ink-muted"
@@ -171,6 +182,35 @@ function SearchStep({
                 : `No foods match "${q}".`
               : "Foods you log will show up here."}
           </p>
+        ) : null}
+        {meals.length ? (
+          <Command.Group
+            heading="Saved meals"
+            className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:text-ink-muted"
+          >
+            {meals.map((meal) => (
+              <Command.Item
+                key={meal.id}
+                value={`meal-${meal.id}`}
+                onSelect={() => onMeal(meal)}
+                className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 data-[selected=true]:bg-surface-2"
+              >
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="truncate text-sm">{meal.name}</span>
+                    <Badge variant="secondary">Meal</Badge>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className="text-xs text-ink-muted">
+                      {meal.items.length}{" "}
+                      {meal.items.length === 1 ? "item" : "items"}
+                    </span>
+                    <MacroLine macros={meal.macros} />
+                  </div>
+                </div>
+              </Command.Item>
+            ))}
+          </Command.Group>
         ) : null}
         {groups.map((group) =>
           group.hits.length ? (
@@ -405,17 +445,30 @@ function AmountStep({
 function Panel({
   date,
   initialSlot,
+  initialStep,
   openedAt,
   onDone,
 }: {
   date: string;
   initialSlot: MealSlot;
+  initialStep?: Step | undefined;
   /** Epoch ms the palette opened, to measure how long logging takes. */
   openedAt: number;
   onDone: () => void;
 }) {
-  const [step, setStep] = useState<Step>({ kind: "search" });
+  const [step, setStep] = useState<Step>(initialStep ?? { kind: "search" });
 
+  if (step.kind === "meal") {
+    return (
+      <MealStep
+        meal={step.meal}
+        date={date}
+        initialSlot={initialSlot}
+        onBack={() => setStep({ kind: "search" })}
+        onDone={onDone}
+      />
+    );
+  }
   if (step.kind === "amount") {
     return (
       <AmountStep
@@ -463,6 +516,7 @@ function Panel({
   return (
     <SearchStep
       onPick={(hit, loggedVia) => setStep({ kind: "amount", hit, loggedVia })}
+      onMeal={(meal) => setStep({ kind: "meal", meal })}
       onCustom={() => setStep({ kind: "custom" })}
       onDescribe={(text) => setStep({ kind: "describe", text })}
       onBarcode={(code) => setStep({ kind: "barcode", code })}
@@ -479,11 +533,14 @@ export function QuickLog({
   onOpenChange,
   date,
   initialSlot,
+  initialStep,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   date: string;
   initialSlot?: MealSlot | undefined;
+  /** Open straight on a food's amount or a saved meal, not the search. */
+  initialStep?: Step | undefined;
 }) {
   const desktop = useMediaQuery(DESKTOP);
   // Fresh state each time the palette opens.
@@ -501,6 +558,7 @@ export function QuickLog({
       key={session}
       date={date}
       initialSlot={slot}
+      initialStep={initialStep}
       openedAt={openedAt}
       onDone={close}
     />
