@@ -47,6 +47,7 @@ import { defaultSlotForHour } from "@/lib/foods/units";
 import { formatAmount } from "@/lib/nutrition/format";
 import { scaleMacros } from "@/lib/nutrition/macros";
 import { displayTags } from "@/lib/recipes/diet";
+import { scaledIngredientText, shownFactor } from "@/lib/recipes/display";
 import type { RecipeDetailDTO } from "@/lib/recipes/types";
 
 function formatTimer(seconds: number): string {
@@ -526,7 +527,12 @@ export function RecipeView({
                       className="flex items-baseline justify-between gap-3 px-4 py-2.5"
                     >
                       <span className="min-w-0">
-                        <span className="block text-sm">{ing.displayText}</span>
+                        <span className="block text-sm">
+                          {scaledIngredientText(
+                            ing.displayText,
+                            shownFactor(ing),
+                          )}
+                        </span>
                         {ing.foodName ? (
                           <span className="block truncate text-xs text-ink-muted">
                             {ing.foodName}
