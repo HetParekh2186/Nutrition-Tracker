@@ -69,7 +69,7 @@ export type Step =
   | { kind: "search" }
   | { kind: "meal"; meal: MealDTO }
   | { kind: "amount"; hit: FoodHit; loggedVia: "search" | "recent" }
-  | { kind: "custom" }
+  | { kind: "custom"; barcode?: string }
   | { kind: "describe"; text: string }
   | { kind: "barcode"; code: string };
 
@@ -513,13 +513,21 @@ function Panel({
         autoScan={!desktop}
         onBack={() => setStep({ kind: "search" })}
         onFound={(hit) => setStep({ kind: "amount", hit, loggedVia: "search" })}
+        onCreateCustom={(barcode) => setStep({ kind: "custom", barcode })}
       />
     );
   }
   if (step.kind === "custom") {
+    const { barcode } = step;
     return (
       <CustomFoodForm
-        onBack={() => setStep({ kind: "search" })}
+        barcode={barcode}
+        backLabel={barcode ? "Back to barcode" : "Back to search"}
+        onBack={() =>
+          setStep(
+            barcode ? { kind: "barcode", code: barcode } : { kind: "search" },
+          )
+        }
         onCreated={(hit) =>
           setStep({ kind: "amount", hit, loggedVia: "search" })
         }

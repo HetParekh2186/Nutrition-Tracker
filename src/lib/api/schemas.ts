@@ -85,6 +85,11 @@ export const CustomFoodRequest = z.object({
   fiberG: Amount.optional(),
   sugarsG: Amount.optional(),
   sodiumMg: Amount.optional(),
+  /** The package's barcode, so scanning it again finds this food. */
+  barcode: z
+    .string()
+    .regex(/^\d{8,14}$/)
+    .optional(),
 });
 export type CustomFoodRequestInput = z.input<typeof CustomFoodRequest>;
 

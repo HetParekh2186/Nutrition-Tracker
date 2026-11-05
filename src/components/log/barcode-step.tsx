@@ -1,13 +1,13 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { ArrowLeft, Camera, Loader2, ScanBarcode } from "lucide-react";
+import { ArrowLeft, Camera, Loader2, Plus, ScanBarcode } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { api } from "@/lib/client/api";
+import { api, ApiError } from "@/lib/client/api";
 import type { FoodHit } from "@/lib/foods/types";
 
 import {
@@ -34,11 +34,14 @@ export function BarcodeStep({
   autoScan = false,
   onBack,
   onFound,
+  onCreateCustom,
 }: {
   initialCode: string;
   autoScan?: boolean;
   onBack: () => void;
   onFound: (hit: FoodHit) => void;
+  /** No product for this code: make one, tagged with the code. */
+  onCreateCustom: (code: string) => void;
 }) {
   const [code, setCode] = useState(initialCode);
   const [canScan] = useState(cameraAvailable);
@@ -52,6 +55,8 @@ export function BarcodeStep({
   });
   const digits = code.replace(/[\s-]/g, "");
   const valid = /^\d{8,14}$/.test(digits);
+  const notFound =
+    lookup.error instanceof ApiError && lookup.error.status === 404;
 
   return (
     <form
@@ -130,12 +135,32 @@ export function BarcodeStep({
           8 to 14 digits, usually 13 on EAN or 12 on UPC labels.
         </p>
       </div>
-      {lookup.isError ? (
+      {notFound ? (
+        <div role="alert" className="grid gap-3 rounded-xl border p-3">
+          <p className="text-sm">
+            This barcode is not in Open Food Facts yet. Add it from the label
+            and it will come up the next time you scan it.
+          </p>
+          <Button
+            type="button"
+            size="lg"
+            onClick={() => onCreateCustom(lookup.variables ?? digits)}
+          >
+            <Plus aria-hidden />
+            Create a custom food
+          </Button>
+        </div>
+      ) : lookup.isError ? (
         <p role="alert" className="text-sm text-over">
           {lookup.error.message}
         </p>
       ) : null}
-      <Button type="submit" size="lg" disabled={!valid || lookup.isPending}>
+      <Button
+        type="submit"
+        size="lg"
+        variant={notFound ? "outline" : "default"}
+        disabled={!valid || lookup.isPending}
+      >
         {lookup.isPending ? (
           <Loader2 aria-hidden className="animate-spin" />
         ) : (

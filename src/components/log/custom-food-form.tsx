@@ -30,10 +30,13 @@ export function CustomFoodForm({
   onBack,
   onCreated,
   backLabel = "Back to search",
+  barcode,
 }: {
   onBack: () => void;
   onCreated: (hit: FoodHit) => void;
   backLabel?: string;
+  /** Saved with the food so scanning this package finds it next time. */
+  barcode?: string | undefined;
 }) {
   const [error, setError] = useState<string | null>(null);
   const create = useMutation({ mutationFn: api.createFood });
@@ -49,6 +52,7 @@ export function CustomFoodForm({
       ...Object.fromEntries(
         NUMBER_FIELDS.map((f) => [f.name, optionalNumber(form.get(f.name))]),
       ),
+      barcode,
     });
     if (!parsed.success) {
       setError(
@@ -95,6 +99,12 @@ export function CustomFoodForm({
           <p className="text-xs text-ink-muted">
             Copy the values from the label, per serving.
           </p>
+          {barcode ? (
+            <p className="text-xs text-ink-muted">
+              Barcode <span className="num">{barcode}</span> will be saved with
+              it.
+            </p>
+          ) : null}
         </div>
       </div>
 
