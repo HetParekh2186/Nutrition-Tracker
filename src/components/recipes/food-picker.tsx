@@ -5,6 +5,7 @@ import { Command } from "cmdk";
 import { Search } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { ScoreBadge } from "@/components/foods/mise-score";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -75,9 +76,16 @@ export function FoodPicker({
                 className="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm data-[selected=true]:bg-surface-2"
               >
                 <span className="min-w-0 truncate">{hit.name}</span>
-                <Badge variant="outline">
-                  {hit.source === "custom" ? "Custom" : "USDA"}
-                </Badge>
+                <span className="flex shrink-0 items-center gap-1.5">
+                  <ScoreBadge score={hit.score} />
+                  <Badge variant="outline">
+                    {hit.source === "custom"
+                      ? "Custom"
+                      : hit.source === "off"
+                        ? "OFF"
+                        : "USDA"}
+                  </Badge>
+                </span>
               </Command.Item>
             ))}
           </Command.List>

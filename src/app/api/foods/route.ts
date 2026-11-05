@@ -6,6 +6,8 @@ import { createCustomFood, getFood } from "@/lib/foods/repo";
 import { N } from "@/lib/nutrition/catalog";
 import type { NutrientMap } from "@/lib/nutrition/math";
 
+const SATURATED_FAT = 1258;
+
 /** Create a custom food from per-serving label values. */
 export const POST = route(async (request: Request) => {
   const userId = await requireUserId();
@@ -18,6 +20,7 @@ export const POST = route(async (request: Request) => {
   };
   if (input.fiberG !== undefined) perServing[N.fiber] = input.fiberG;
   if (input.sugarsG !== undefined) perServing[N.sugars] = input.sugarsG;
+  if (input.satFatG !== undefined) perServing[SATURATED_FAT] = input.satFatG;
   if (input.sodiumMg !== undefined) perServing[N.sodium] = input.sodiumMg;
 
   const id = await createCustomFood(userId, {

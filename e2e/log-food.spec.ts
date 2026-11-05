@@ -52,6 +52,24 @@ test("log a food from search, then delete it", async ({ page, isMobile }) => {
   await expect(slot.getByRole("listitem")).toHaveCount(before);
 });
 
+test("every food shows a Mise score", async ({ page, isMobile }) => {
+  await signInAsDemo(page);
+  await openQuickLog(page, isMobile);
+  await page.getByPlaceholder(/Search foods/).fill("egg whole raw fresh");
+  const option = page
+    .getByRole("option", { name: /Egg, whole, raw, fresh/ })
+    .first();
+  await expect(
+    option.getByRole("img", { name: /^Mise score \d+ out of 100/ }),
+  ).toBeVisible();
+  await option.click();
+
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByText(/^Mise score/)).toBeVisible();
+  await dialog.getByText("How it is scored").click();
+  await expect(dialog.getByText(/Scored on nutrition only/)).toBeVisible();
+});
+
 test("look up a packaged food by barcode", async ({ page, isMobile }) => {
   await signInAsDemo(page);
   await page.goto("/today");
@@ -63,6 +81,10 @@ test("look up a packaged food by barcode", async ({ page, isMobile }) => {
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText("Nutella", { exact: true })).toBeVisible();
   await expect(dialog.getByText(/^OFF/)).toBeVisible();
+  // Packaged foods are scored on nutrition, additives and organic.
+  await dialog.getByText("How it is scored").click();
+  await expect(dialog.getByText("Additives", { exact: true })).toBeVisible();
+  await expect(dialog.getByText("Organic", { exact: true })).toBeVisible();
   await dialog.getByLabel("Amount").fill("15");
   await dialog.getByLabel("Unit").selectOption("g");
   await dialog.getByText("Snacks", { exact: true }).click();

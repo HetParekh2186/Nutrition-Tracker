@@ -247,6 +247,10 @@ export const foods = pgTable(
       sql`to_tsvector('english', coalesce(name,'') || ' ' || coalesce(brand,''))`,
     ),
     embedding: vector({ dimensions: EMBEDDING_DIMENSIONS }),
+    // Mise score inputs from Open Food Facts; null is unknown.
+    nutriscorePoints: smallint(),
+    additives: text().array(),
+    organic: boolean(),
     createdAt: createdAt(),
   },
   (t) => [

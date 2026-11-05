@@ -50,6 +50,13 @@
       "when": 1793832678345,
       "tag": "0006_saved_meals",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793856918092,
+      "tag": "0007_mise_score",
+      "breakpoints": true
     }
   ]
 }

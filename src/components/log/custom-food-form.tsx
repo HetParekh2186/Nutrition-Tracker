@@ -17,6 +17,9 @@ const NUMBER_FIELDS = [
   { name: "carbsG", label: "Carbs", unit: "g", required: true },
   { name: "fatG", label: "Fat", unit: "g", required: true },
   { name: "fiberG", label: "Fiber", unit: "g", required: false },
+  // Optional, but the Mise score needs sugars, saturated fat and sodium.
+  { name: "sugarsG", label: "Sugars", unit: "g", required: false },
+  { name: "satFatG", label: "Saturated fat", unit: "g", required: false },
   { name: "sodiumMg", label: "Sodium", unit: "mg", required: false },
 ] as const;
 
@@ -74,6 +77,7 @@ export function CustomFoodForm({
             : null,
           lastUsed: null,
           uses: 0,
+          score: food.score,
         }),
       onError: (err) => setError(err.message),
     });

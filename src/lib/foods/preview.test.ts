@@ -19,6 +19,7 @@ const base: FoodHit = {
   defaultPortion: { label: "1 large", grams: 50 },
   lastUsed: null,
   uses: 0,
+  score: null,
 };
 
 describe("defaultAmount", () => {

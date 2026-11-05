@@ -30,6 +30,10 @@ const NUTELLA = OffResponse.parse({
       calcium_100g: 0.12,
       "vitamin-d_100g": 0.0000025,
     },
+    nutriscore_score: 26,
+    additives_n: 1,
+    additives_tags: ["en:e322", "en:e322i"],
+    labels_tags: ["en:no-gluten", "en:no-organic-label"],
   },
 });
 
@@ -45,6 +49,32 @@ describe("barcodes", () => {
     expect(validCheckDigit("3017620422004")).toBe(false);
     expect(validCheckDigit("036000291452")).toBe(true); // UPC-A
     expect(validCheckDigit("96385074")).toBe(true); // EAN-8
+  });
+});
+
+describe("score inputs", () => {
+  it("keeps Nutri-Score points, additives and the organic label", () => {
+    expect(offToFood(NUTELLA)!.quality).toEqual({
+      nutriscorePoints: 26,
+      additives: ["en:e322", "en:e322i"],
+      organic: false,
+    });
+  });
+
+  it("reads additives as unknown until OFF has analysed the ingredients", () => {
+    const res = OffResponse.parse({
+      status: 1,
+      product: {
+        product_name: "Organic oats",
+        nutriments: { "energy-kcal_100g": 380 },
+        labels_tags: ["en:organic", "en:eu-organic"],
+      },
+    });
+    expect(offToFood(res)!.quality).toEqual({
+      nutriscorePoints: null,
+      additives: null,
+      organic: true,
+    });
   });
 });
 

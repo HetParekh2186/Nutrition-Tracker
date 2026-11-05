@@ -102,6 +102,7 @@ function hit(id: number, name: string): FoodHit {
     defaultPortion: null,
     lastUsed: null,
     uses: 0,
+    score: null,
   };
 }
 
