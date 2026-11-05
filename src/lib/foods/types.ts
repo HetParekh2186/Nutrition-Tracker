@@ -2,6 +2,7 @@
 
 import type { FoodSource } from "@/lib/db/enums";
 import type { NutrientMap } from "@/lib/nutrition/math";
+import type { MiseScore } from "@/lib/nutrition/mise-score";
 
 export type FoodHit = {
   id: number;
@@ -14,6 +15,8 @@ export type FoodHit = {
   /** Present for foods the user has logged before. */
   lastUsed: { quantityG: number; portionLabel: string | null } | null;
   uses: number;
+  /** Null when there is not enough nutrition data to score. */
+  score: MiseScore | null;
   /** Text-match signals, present on search results. */
   match?: { similarity: number; fullText: boolean };
 };
@@ -30,6 +33,7 @@ export type FoodDetail = {
   per100g: NutrientMap;
   energyEstimated: boolean;
   portions: FoodPortion[];
+  score: MiseScore | null;
 };
 
 export type FoodSearchResult = {

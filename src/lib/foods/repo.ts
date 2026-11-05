@@ -7,14 +7,37 @@ import { getDb } from "@/lib/db";
 import { foodNutrients, foodPortions, foods } from "@/lib/db/schema";
 import { N } from "@/lib/nutrition/catalog";
 import { withEstimatedEnergy, type NutrientMap } from "@/lib/nutrition/math";
+import { miseScore, type FoodQuality } from "@/lib/nutrition/mise-score";
 
 import type { OffFood } from "./off";
 import { prefixTsQuery } from "./query";
 import type { FoodDetail, FoodHit, MyFoodDTO, MyFoodsSort } from "./types";
 
-const PREVIEW_NUTRIENTS = [N.energy, N.protein, N.carbs, N.fat, N.fiber];
+// Macros for the preview, plus what the Mise score needs.
+const PREVIEW_NUTRIENTS = [
+  N.energy,
+  N.protein,
+  N.carbs,
+  N.fat,
+  N.fiber,
+  N.sugars,
+  N.sodium,
+  1258, // saturated fat
+];
 
-type HitRow = {
+type QualityRow = {
+  nutriscore_points: number | null;
+  additives: string[] | null;
+  organic: boolean | null;
+};
+
+const qualityOf = (row: QualityRow): FoodQuality => ({
+  nutriscorePoints: row.nutriscore_points,
+  additives: row.additives,
+  organic: row.organic,
+});
+
+type HitRow = QualityRow & {
   id: string | number;
   name: string;
   brand: string | null;
@@ -34,12 +57,14 @@ function toHit(row: HitRow): FoodHit {
   for (const [id, amount] of Object.entries(row.nutrients ?? {})) {
     raw[Number(id)] = Number(amount);
   }
+  const per100g = withEstimatedEnergy(raw).map;
   return {
     id: Number(row.id),
     name: row.name,
     brand: row.brand,
     source: row.source,
-    per100g: withEstimatedEnergy(raw).map,
+    per100g,
+    score: miseScore(per100g, qualityOf(row)),
     defaultPortion:
       row.portion_label && row.portion_grams
         ? { label: row.portion_label, grams: Number(row.portion_grams) }
@@ -66,6 +91,7 @@ function toHit(row: HitRow): FoodHit {
 // Shared tail of the hit queries: preview macros, first portion, last use.
 const hitColumns = sql`
   f.id, f.name, f.brand, f.source,
+  f.nutriscore_points, f.additives, f.organic,
   (select jsonb_object_agg(fn.nutrient_id, fn.amount_per_100g)
      from food_nutrients fn
     where fn.food_id = f.id
@@ -281,8 +307,19 @@ export async function getFood(
     per100g: nutrients?.map ?? {},
     energyEstimated: nutrients?.energyEstimated ?? false,
     portions,
+    score: miseScore(nutrients?.map ?? {}, {
+      nutriscorePoints: food.nutriscorePoints,
+      additives: food.additives,
+      organic: food.organic,
+    }),
   };
 }
+
+const qualityColumns = (product: OffFood) => ({
+  nutriscorePoints: product.quality.nutriscorePoints,
+  additives: product.quality.additives,
+  organic: product.quality.organic,
+});
 
 /**
  * A packaged food by barcode: the user's own custom food for it, else the
@@ -308,12 +345,24 @@ export async function foodByBarcode(
     .limit(1);
   if (own[0]) return getFood(userId, own[0].id);
 
-  const cached = await db
-    .select({ id: foods.id })
+  const [cached] = await db
+    .select({ id: foods.id, organic: foods.organic })
     .from(foods)
     .where(and(eq(foods.source, "off"), eq(foods.sourceId, code)))
     .limit(1);
-  if (cached[0]) return getFood(userId, cached[0].id);
+  if (cached) {
+    // Cached before the Mise score existed: fetch its score inputs once.
+    if (cached.organic === null) {
+      const fresh = await fetchProduct(code).catch(() => null);
+      if (fresh) {
+        await db
+          .update(foods)
+          .set(qualityColumns(fresh))
+          .where(eq(foods.id, cached.id));
+      }
+    }
+    return getFood(userId, cached.id);
+  }
 
   const product = await fetchProduct(code);
   if (!product) return null;
@@ -325,6 +374,7 @@ export async function foodByBarcode(
         sourceId: code,
         name: product.name,
         brand: product.brand,
+        ...qualityColumns(product),
       })
       .onConflictDoNothing()
       .returning({ id: foods.id });

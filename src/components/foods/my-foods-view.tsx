@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import { useQuickLog } from "@/components/log/quick-log-provider";
 import { MacroLine } from "@/components/nutrition/macro-chip";
+import { ScoreBadge } from "@/components/foods/mise-score";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -187,6 +188,7 @@ export function MyFoodsView({ initialFilter }: { initialFilter: Filter }) {
                       >
                         {SOURCE[food.source]}
                       </Badge>
+                      <ScoreBadge score={food.score} />
                     </span>
                     <span className="truncate text-xs text-ink-muted">
                       {food.brand ? `${food.brand} · ` : ""}

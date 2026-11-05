@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import { N } from "@/lib/nutrition/catalog";
 import type { NutrientMap } from "@/lib/nutrition/math";
+import type { FoodQuality } from "@/lib/nutrition/mise-score";
 
 /** Digits only, 8 to 14 long (EAN-8, UPC-A, EAN-13, GTIN-14). */
 export function normalizeBarcode(raw: string): string | null {
@@ -38,6 +39,10 @@ export const OffResponse = z.object({
       serving_size: z.string().optional(),
       serving_quantity: Num.optional(),
       nutriments: z.record(z.string(), z.unknown()).default({}),
+      nutriscore_score: z.unknown().optional(),
+      additives_n: z.unknown().optional(),
+      additives_tags: z.array(z.string()).optional(),
+      labels_tags: z.array(z.string()).optional(),
     })
     .optional(),
 });
@@ -72,6 +77,8 @@ export type OffFood = {
   brand: string | null;
   per100g: NutrientMap;
   portion: { label: string; grams: number } | null;
+  /** Inputs to the Mise score beyond nutrients. */
+  quality: FoodQuality;
 };
 
 function num(v: unknown): number | null {
@@ -121,7 +128,32 @@ export function offToFood(res: OffResponse): OffFood | null {
         }
       : null;
   const brand = p.brands?.split(",")[0]?.trim() || null;
-  return { name, brand, per100g, portion };
+  return { name, brand, per100g, portion, quality: offQuality(p) };
+}
+
+/**
+ * Nutri-Score points, additives and organic label. OFF only counts
+ * additives once it has read the ingredients (additives_n is then set), so
+ * an empty list before that means unknown, not none.
+ */
+export function offQuality(
+  p: NonNullable<OffResponse["product"]>,
+): FoodQuality {
+  const score = z.coerce.number().int().safeParse(p.nutriscore_score);
+  const analysed = p.additives_n !== undefined && p.additives_n !== null;
+  return {
+    nutriscorePoints:
+      p.nutriscore_score !== undefined &&
+      p.nutriscore_score !== null &&
+      score.success
+        ? score.data
+        : null,
+    additives: analysed ? (p.additives_tags ?? []) : null,
+    // en:organic, en:eu-organic, en:usda-organic, fr:ab-agriculture-biologique
+    organic: (p.labels_tags ?? []).some(
+      (t) => /organic|biologique/.test(t) && !/:(no|non)-/.test(t),
+    ),
+  };
 }
 
 const FIELDS_PARAM = [
@@ -132,6 +164,10 @@ const FIELDS_PARAM = [
   "serving_size",
   "serving_quantity",
   "nutriments",
+  "nutriscore_score",
+  "additives_n",
+  "additives_tags",
+  "labels_tags",
 ].join(",");
 
 /** Fetch a product from the OFF API; null when OFF does not know it. */

@@ -14,6 +14,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Drawer } from "vaul";
 
 import { MacroLine } from "@/components/nutrition/macro-chip";
+import { ScoreBadge, ScoreCard } from "@/components/foods/mise-score";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -82,6 +83,7 @@ function FoodRow({ hit }: { hit: FoodHit }) {
         <Badge variant={hit.source === "custom" ? "secondary" : "outline"}>
           {SOURCE_LABEL[hit.source]}
         </Badge>
+        <ScoreBadge score={hit.score} className="ml-auto" />
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="text-xs text-ink-muted">{preview.label}</span>
@@ -444,6 +446,8 @@ function AmountStep({
         </span>
         <MacroLine macros={macros} />
       </div>
+
+      <ScoreCard score={detail.data?.score ?? hit.score} />
 
       <Button type="submit" size="lg" disabled={!valid}>
         Log to {SLOT_LABELS[slot].toLowerCase()}

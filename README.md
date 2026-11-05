@@ -31,6 +31,8 @@ One number is fixed by design: every nutrient value on screen traces to USDA Foo
 
 **Quick Log.** Press Ctrl+K (or the plus button on a phone) to search more than 8,000 USDA foods. Results rank foods you log often first, and portions come from USDA ("1 large egg", "1 cup, chopped"). On a phone, the barcode button opens the camera and scans the product (or type the digits); Open Food Facts fills in the nutrition. If a product is not listed, one tap turns it into a custom food that keeps the barcode, so the next scan finds it.
 
+**Mise score.** Every food in search, My foods and the amount step shows a score from 0 to 100 (Excellent, Good, Poor or Bad), with a breakdown one tap away. Nutrition counts for 60 points, using Nutri-Score; additives of concern for 30, with a high-risk one such as a nitrite capping the score at 49; and an organic label for 10. Additives and labels come from Open Food Facts, so USDA and custom foods are scored on nutrition alone, and the breakdown says so.
+
 **Foods.** A library tab with everything you have built up. My foods keeps every food you have logged or created in one searchable list, sorted by most recent or most logged, and one tap logs it again. Saved meals group foods and recipes you eat together ("Usual breakfast"), so you can log them all at once, scaled to any portion. Save a meal from scratch or straight from a slot on Today. Custom foods and recipes are created from the same tab.
 
 **Plain-English logging.** Describe a meal the way you would say it. Claude splits it into foods; Mise matches each one to USDA data, converts the amount to grams and shows its confidence. Anything under 70% asks you to check it before logging.
@@ -85,6 +87,7 @@ The browser and the nightly cron both call the same Next.js route handlers, whic
 - **Hard rules stay hard.** Diet, allergies and excluded ingredients filter candidates before scoring. Exclusions expand to whole families, so "shellfish" also removes shrimp and prawns.
 - **Diets are sets, not labels.** A diet is the set of animal foods you eat (beef, pork, lamb, chicken, other poultry, fish, shellfish, eggs, dairy, honey). Presets fill the set in one click, and anything between them works: a vegetarian who eats chicken and eggs is just that set. Ingredients are read for hidden animal foods too, so fish sauce counts as fish, gelatin as beef and pork, and pesto as dairy. Generated recipes and Cook Mode swaps are checked against the same rule.
 - **Row-level security on every table.** Each user's data is isolated in Postgres itself, not just in application code.
+- **The Mise score is computed, not licensed.** Yuka has no public API, so Mise scores foods itself with the same idea: 60% Nutri-Score, 30% additives, 10% organic. Nutri-Score points come from Open Food Facts when it has them, else from the stored nutrients per 100 g, mapped to 0 to 100 linearly between the grade boundaries so near-identical foods never land far apart. A food missing sodium, or sugars or saturated fat it could plausibly contain, gets no score rather than a flattering guess. Category rules (drinks, cheese, added fats) and fruit and vegetable content are only applied when Open Food Facts supplies the points, so USDA cheeses score lower than their official grade.
 - **Counts stay honest.** Missing nutrient values are shown as unknown, not zero, and each total says how many foods had data.
 
 ## How recommendations work
@@ -176,9 +179,9 @@ pnpm test:coverage    # with coverage for lib/nutrition and lib/recommend
 pnpm test:e2e         # Playwright, desktop and a Pixel 7 viewport
 ```
 
-- **Unit:** every function in `lib/nutrition` and `lib/recommend`, using the worked examples above as fixtures, with coverage held at 90% of lines. Unit conversion, barcode parsing, substitutions and the Cook Mode tools are tested too.
+- **Unit:** every function in `lib/nutrition` and `lib/recommend`, using the worked examples above as fixtures, with coverage held at 90% of lines. Unit conversion, barcode parsing, the Mise score (Nutri-Score points checked against Nutella's published grade), substitutions and the Cook Mode tools are tested too.
 - **LLM contracts:** recorded Claude responses checked against the Zod schemas, so tests never call the API.
-- **End to end:** both key flows (plain-English logging, and suggest, cook and log), plus search, recipes, onboarding, barcode lookup (typed and scanned from a fake camera feed) and creating a food from an unknown barcode, on desktop and mobile.
+- **End to end:** both key flows (plain-English logging, and suggest, cook and log), plus search, recipes, onboarding, barcode lookup (typed and scanned from a fake camera feed) creating a food from an unknown barcode, and the Mise score on search results and scanned products, on desktop and mobile.
 - **Accessibility:** axe checks every main page for WCAG 2.1 AA in both themes.
 - **Performance:** on a production build, Today's Largest Contentful Paint is about 0.35 s on desktop and 0.56 s on a throttled phone, with no layout shift. Food search has a p95 of about 105 ms against the hosted database.
 

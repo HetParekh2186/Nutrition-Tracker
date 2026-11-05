@@ -84,6 +84,7 @@ export const CustomFoodRequest = z.object({
   fatG: Amount,
   fiberG: Amount.optional(),
   sugarsG: Amount.optional(),
+  satFatG: Amount.optional(),
   sodiumMg: Amount.optional(),
   /** The package's barcode, so scanning it again finds this food. */
   barcode: z

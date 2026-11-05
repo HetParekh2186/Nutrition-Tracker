@@ -47,6 +47,7 @@ export const GET = route(async (_request: Request, { params }: Ctx) => {
       : null,
     lastUsed: null,
     uses: 0,
+    score: food.score,
   };
   return NextResponse.json(hit);
 });

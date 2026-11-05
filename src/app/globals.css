@@ -24,6 +24,8 @@
   --good: #3e8e5a;
   --warn: #c98500;
   --over: #a83522;
+  /* Mise score "good", between good and warn */
+  --fair: #7d9a2a;
 
   /* Derived: text on paprika (ink passes WCAG AA, white does not) */
   --on-accent: #1a1814;
@@ -48,6 +50,7 @@
   --good: #5db57a;
   --warn: #e8a21e;
   --over: #f07a64;
+  --fair: #a9c556;
 
   --on-accent: #12110f;
   --scrim: rgb(0 0 0 / 0.56);
@@ -98,6 +101,7 @@
   --color-good: var(--good);
   --color-warn: var(--warn);
   --color-over: var(--over);
+  --color-fair: var(--fair);
   --color-scrim: var(--scrim);
 
   --color-background: var(--background);
