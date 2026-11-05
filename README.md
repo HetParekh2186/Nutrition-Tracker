@@ -29,7 +29,7 @@ One number is fixed by design: every nutrient value on screen traces to USDA Foo
 
 ![Today, with the calorie ring, macro totals and remaining budget](docs/media/today.png)
 
-**Quick Log.** Press Ctrl+K (or the plus button on a phone) to search more than 8,000 USDA foods. Results rank foods you log often first, and portions come from USDA ("1 large egg", "1 cup, chopped"). On a phone, the barcode button opens the camera and scans the product (or type the digits); Open Food Facts fills in the nutrition.
+**Quick Log.** Press Ctrl+K (or the plus button on a phone) to search more than 8,000 USDA foods. Results rank foods you log often first, and portions come from USDA ("1 large egg", "1 cup, chopped"). On a phone, the barcode button opens the camera and scans the product (or type the digits); Open Food Facts fills in the nutrition. If a product is not listed, one tap turns it into a custom food that keeps the barcode, so the next scan finds it.
 
 **Foods.** A library tab with everything you have built up. My foods keeps every food you have logged or created in one searchable list, sorted by most recent or most logged, and one tap logs it again. Saved meals group foods and recipes you eat together ("Usual breakfast"), so you can log them all at once, scaled to any portion. Save a meal from scratch or straight from a slot on Today. Custom foods and recipes are created from the same tab.
 
@@ -178,7 +178,7 @@ pnpm test:e2e         # Playwright, desktop and a Pixel 7 viewport
 
 - **Unit:** every function in `lib/nutrition` and `lib/recommend`, using the worked examples above as fixtures, with coverage held at 90% of lines. Unit conversion, barcode parsing, substitutions and the Cook Mode tools are tested too.
 - **LLM contracts:** recorded Claude responses checked against the Zod schemas, so tests never call the API.
-- **End to end:** both key flows (plain-English logging, and suggest, cook and log), plus search, recipes, onboarding and barcode lookup, on desktop and mobile.
+- **End to end:** both key flows (plain-English logging, and suggest, cook and log), plus search, recipes, onboarding, barcode lookup (typed and scanned from a fake camera feed) and creating a food from an unknown barcode, on desktop and mobile.
 - **Accessibility:** axe checks every main page for WCAG 2.1 AA in both themes.
 - **Performance:** on a production build, Today's Largest Contentful Paint is about 0.35 s on desktop and 0.56 s on a throttled phone, with no layout shift. Food search has a p95 of about 105 ms against the hosted database.
 
@@ -186,7 +186,6 @@ CI runs type checks, lint, formatting, unit tests with coverage, the em dash che
 
 ## Roadmap
 
-- Camera barcode scanning on phones
 - Weekly meal planning with a shopping list
 - Logging from a photo of a plate
 - Recipe import from a URL
