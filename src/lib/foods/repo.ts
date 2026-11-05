@@ -272,7 +272,11 @@ export async function getFood(
     name: food.name,
     brand: food.brand,
     source: food.source,
-    sourceId: food.sourceId,
+    // Custom barcodes are stored with the owner in front; show the code.
+    sourceId:
+      food.source === "custom"
+        ? (food.sourceId?.split(":")[1] ?? null)
+        : food.sourceId,
     isCustom: food.ownerId !== null,
     per100g: nutrients?.map ?? {},
     energyEstimated: nutrients?.energyEstimated ?? false,
@@ -281,8 +285,9 @@ export async function getFood(
 }
 
 /**
- * A packaged food by barcode: from the cache of earlier lookups, else from
- * Open Food Facts, stored for next time. Null when nobody knows it.
+ * A packaged food by barcode: the user's own custom food for it, else the
+ * cache of earlier lookups, else Open Food Facts, stored for next time.
+ * Null when nobody knows it.
  */
 export async function foodByBarcode(
   userId: string,
@@ -290,6 +295,19 @@ export async function foodByBarcode(
   fetchProduct: (code: string) => Promise<OffFood | null>,
 ): Promise<FoodDetail | null> {
   const db = getDb();
+  const own = await db
+    .select({ id: foods.id })
+    .from(foods)
+    .where(
+      and(
+        eq(foods.source, "custom"),
+        eq(foods.sourceId, customBarcodeKey(userId, code)),
+        eq(foods.ownerId, userId),
+      ),
+    )
+    .limit(1);
+  if (own[0]) return getFood(userId, own[0].id);
+
   const cached = await db
     .select({ id: foods.id })
     .from(foods)
@@ -359,18 +377,34 @@ export type CustomFoodInput = {
   servingGrams: number;
   /** Amounts in one serving, by nutrient id. */
   perServing: NutrientMap;
+  barcode?: string | undefined;
 };
+
+// (source, source_id) is unique across everyone, and two people can make
+// their own food for the same package, so custom barcodes carry the owner.
+const customBarcodeKey = (userId: string, code: string) => `${userId}:${code}`;
 
 /** Store a custom food. Nutrients are converted to per 100 g. */
 export async function createCustomFood(
   userId: string,
   input: CustomFoodInput,
 ): Promise<number> {
+  const sourceId = input.barcode
+    ? customBarcodeKey(userId, input.barcode)
+    : null;
   return getDb().transaction(async (tx) => {
+    // The newest food for a barcode wins the next scan.
+    if (sourceId) {
+      await tx
+        .update(foods)
+        .set({ sourceId: null })
+        .where(and(eq(foods.source, "custom"), eq(foods.sourceId, sourceId)));
+    }
     const [food] = await tx
       .insert(foods)
       .values({
         source: "custom",
+        sourceId,
         name: input.name,
         brand: input.brand ?? null,
         ownerId: userId,

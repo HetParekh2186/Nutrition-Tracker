@@ -26,6 +26,7 @@ export const POST = route(async (request: Request) => {
     servingLabel: input.servingLabel,
     servingGrams: input.servingGrams,
     perServing,
+    barcode: input.barcode,
   });
   return NextResponse.json(await getFood(userId, id), { status: 201 });
 });

@@ -76,3 +76,64 @@ test("look up a packaged food by barcode", async ({ page, isMobile }) => {
   await entry.click();
   await page.getByRole("button", { name: "Delete" }).click();
 });
+
+test("an unknown barcode offers a custom food that keeps the code", async ({
+  page,
+  isMobile,
+}) => {
+  const code = "681131355353";
+  // Mocked so the demo account does not collect a test food every run.
+  await page.route(`**/api/foods/barcode/${code}`, (route) =>
+    route.fulfill({
+      status: 404,
+      json: { error: "No product with that barcode in Open Food Facts." },
+    }),
+  );
+  let posted: Record<string, unknown> | null = null;
+  await page.route("**/api/foods", async (route) => {
+    posted = route.request().postDataJSON() as Record<string, unknown>;
+    await route.fulfill({
+      status: 201,
+      json: {
+        id: 999_999,
+        name: "Trail mix",
+        brand: null,
+        source: "custom",
+        sourceId: code,
+        isCustom: true,
+        per100g: { 1008: 500 },
+        energyEstimated: false,
+        portions: [{ id: 1, label: "1 bag", grams: 40 }],
+      },
+    });
+  });
+
+  await signInAsDemo(page);
+  await openQuickLog(page, isMobile);
+  await page.getByPlaceholder(/Search foods/).fill(code);
+  await page.getByText(`Look up barcode ${code}`).click();
+  await page.getByRole("button", { name: "Look up" }).click();
+
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByText(/not in Open Food Facts yet/)).toBeVisible();
+  await dialog.getByRole("button", { name: "Create a custom food" }).click();
+  await expect(dialog.getByText(`Barcode ${code} will be saved`)).toBeVisible();
+
+  // Back returns to the barcode, not the search.
+  await dialog.getByRole("button", { name: "Back to barcode" }).click();
+  await expect(dialog.getByLabel("Digits under the barcode")).toHaveValue(code);
+  await dialog.getByRole("button", { name: "Look up" }).click();
+  await dialog.getByRole("button", { name: "Create a custom food" }).click();
+
+  await dialog.getByLabel("Name").fill("Trail mix");
+  await dialog.getByLabel("Serving").fill("1 bag");
+  await dialog.getByLabel("Grams").fill("40");
+  await dialog.getByLabel(/Calories/).fill("200");
+  await dialog.getByLabel(/Protein/).fill("6");
+  await dialog.getByLabel(/Carbs/).fill("18");
+  await dialog.getByLabel(/^Fat/).fill("12");
+  await dialog.getByRole("button", { name: "Save and choose amount" }).click();
+
+  await expect(dialog.getByText("Trail mix", { exact: true })).toBeVisible();
+  expect(posted).toMatchObject({ name: "Trail mix", barcode: code });
+});
