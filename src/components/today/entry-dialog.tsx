@@ -163,20 +163,20 @@ function EntryForm({
     const label = isFood ? portionLabelFor(qty, unit) : null;
     const changedAmount =
       Math.abs(next - base) > 1e-6 || (isFood && label !== entry.portionLabel);
-    update.mutate(
-      {
-        id: entry.id,
-        patch: {
-          ...(slot !== entry.mealSlot ? { mealSlot: slot } : {}),
-          ...(changedAmount
-            ? isFood
-              ? { quantityG: next, portionLabel: label }
-              : { servings: next }
-            : {}),
-        },
-      },
-      { onSuccess: onClose },
-    );
+    const patch = {
+      ...(slot !== entry.mealSlot ? { mealSlot: slot } : {}),
+      ...(changedAmount
+        ? isFood
+          ? { quantityG: next, portionLabel: label }
+          : { servings: next }
+        : {}),
+    };
+    // Saving without a change is just closing; the API rejects empty patches.
+    if (Object.keys(patch).length === 0) {
+      onClose();
+      return;
+    }
+    update.mutate({ id: entry.id, patch }, { onSuccess: onClose });
   }
 
   return (

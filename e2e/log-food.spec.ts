@@ -31,9 +31,15 @@ test("log a food from search, then delete it", async ({ page, isMobile }) => {
   await expect(slot.getByRole("listitem")).toHaveCount(before + 1);
   await expect(entry).toBeEnabled();
 
-  // Editing reopens it in the unit it was logged in, with the equivalents.
+  // Saving without a change just closes the dialog, with no error.
   await entry.click();
   const edit = page.getByRole("dialog");
+  await edit.getByRole("button", { name: "Save" }).click();
+  await expect(edit).toBeHidden();
+  await expect(page.getByText("Invalid request")).toHaveCount(0);
+
+  // Editing reopens it in the unit it was logged in, with the equivalents.
+  await entry.click();
   const editAmount = edit.getByLabel("Amount");
   await expect(editAmount).toHaveValue("2");
   await expect(edit.getByLabel("Unit")).toHaveValue(/1 large/);
