@@ -25,11 +25,13 @@ One number is fixed by design: every nutrient value on screen traces to USDA Foo
 
 ## Features
 
-**Today.** Calories and macros as a ring, every logged food with its macros, and more than 40 nutrients (vitamins, minerals, fats and amino acids) against your personal targets (Dietary Reference Intakes for your age and sex, or numbers you set yourself). Light and dark themes, designed together.
+**Today.** Calories and macros as a ring, every logged food with its macros, and more than 40 nutrients (vitamins, minerals, fats and amino acids) against your personal targets (Dietary Reference Intakes for your age and sex, or numbers you set yourself). Light and dark themes, designed together. On a phone the ring is compact and the nutrient groups start closed, each showing how many targets are met, so your meals are on the first screen.
+
+**Built for one thumb.** The phone's tab bar has Today, For You, Foods and Insights, with Log in the middle, so logging is always one tap and nothing floats over the page. Settings is the gear in the header, and Sign out sits inside Settings instead of next to everything else.
 
 ![Today, with the calorie ring, macro totals and remaining budget](docs/media/today.png)
 
-**Quick Log.** Press Ctrl+K (or the plus button on a phone) to search more than 8,000 USDA foods. Results rank foods you log often first, and portions come from USDA ("1 large egg", "1 cup, chopped"). On a phone, the barcode button opens the camera and scans the product (or tap the digits box to type them, which closes the camera); Open Food Facts fills in the nutrition. If a product is not listed, one tap turns it into a custom food that keeps the barcode, so the next scan finds it.
+**Quick Log.** Press Ctrl+K (or Log in the middle of the tab bar on a phone) to search more than 8,000 USDA foods. Results rank foods you log often first, and portions come from USDA ("1 large egg", "1 cup, chopped"). On a phone, the barcode button opens the camera and scans the product (or tap the digits box to type them, which closes the camera); Open Food Facts fills in the nutrition. If a product is not listed, one tap turns it into a custom food that keeps the barcode, so the next scan finds it.
 
 **Mise score.** Every food in search, My foods and the amount step shows a score from 0 to 100 (Excellent, Good, Poor or Bad), with a breakdown one tap away. Nutrition counts for 60 points, using Nutri-Score; additives of concern for 30, with a high-risk one such as a nitrite capping the score at 49; and an organic label for 10. Additives and labels come from Open Food Facts, so USDA and custom foods are scored on nutrition alone, and the breakdown says so.
 
@@ -181,7 +183,7 @@ pnpm test:e2e         # Playwright, desktop and a Pixel 7 viewport
 
 - **Unit:** every function in `lib/nutrition` and `lib/recommend`, using the worked examples above as fixtures, with coverage held at 90% of lines. Unit conversion, barcode parsing, the Mise score (Nutri-Score points checked against Nutella's published grade), substitutions and the Cook Mode tools are tested too.
 - **LLM contracts:** recorded Claude responses checked against the Zod schemas, so tests never call the API.
-- **End to end:** both key flows (plain-English logging, and suggest, cook and log), plus search, editing a logged entry, recipes, onboarding, barcode lookup (typed and scanned from a fake camera feed) creating a food from an unknown barcode, and the Mise score on search results and scanned products, on desktop and mobile.
+- **End to end:** both key flows (plain-English logging, and suggest, cook and log), plus search, editing a logged entry, phone navigation, recipes, onboarding, barcode lookup (typed and scanned from a fake camera feed) creating a food from an unknown barcode, and the Mise score on search results and scanned products, on desktop and mobile.
 - **Accessibility:** axe checks every main page for WCAG 2.1 AA in both themes.
 - **Performance:** on a production build, Today's Largest Contentful Paint is about 0.35 s on desktop and 0.56 s on a throttled phone, with no layout shift. Food search has a p95 of about 105 ms against the hosted database.
 

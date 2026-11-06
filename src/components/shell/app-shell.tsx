@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSyncExternalStore, type ReactNode } from "react";
+import { Fragment, useSyncExternalStore, type ReactNode } from "react";
 
 import { useQuickLog } from "@/components/log/quick-log-provider";
 import {
@@ -28,7 +28,7 @@ export type NavItem = {
   href: string;
   label: string;
   icon: ReactNode;
-  /** Left out of the phone's bottom bar, which has room for five. */
+  /** Left out of the phone's bottom bar, which has room for four and Log. */
   desktopOnly?: boolean;
   /** Other sections this tab stands for where it is the only way in. */
   phoneAlso?: string[];
@@ -50,7 +50,13 @@ export const NAV: NavItem[] = [
     desktopOnly: true,
   },
   { href: "/insights", label: "Insights", icon: <ChartColumn aria-hidden /> },
-  { href: "/settings", label: "Settings", icon: <Settings aria-hidden /> },
+  // On a phone, Settings is the gear in the header.
+  {
+    href: "/settings",
+    label: "Settings",
+    icon: <Settings aria-hidden />,
+    desktopOnly: true,
+  },
 ];
 
 /** "⌘K" on Apple devices, "Ctrl K" elsewhere. */
@@ -76,17 +82,36 @@ function LogButton() {
   );
 }
 
-function MobileLogButton() {
+/** The middle of the phone's tab bar: the one thing done every day. */
+function TabBarLogButton() {
   const { open } = useQuickLog();
   return (
-    <button
-      type="button"
-      onClick={() => open()}
-      aria-label="Log food"
-      className="fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 grid size-14 place-items-center rounded-full bg-accent text-on-accent shadow-float outline-none focus-visible:ring-3 focus-visible:ring-ring/50 md:hidden"
-    >
-      <Plus aria-hidden className="size-6" />
-    </button>
+    <li className="flex">
+      <button
+        type="button"
+        onClick={() => open()}
+        aria-label="Log food"
+        className="flex min-w-16 flex-col items-center justify-center gap-1 px-2 text-xs font-medium text-ink outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      >
+        {/* Raised so its label lines up with the other tabs'. */}
+        <span className="-mt-4 grid size-9 place-items-center rounded-full bg-accent text-on-accent shadow-float">
+          <Plus aria-hidden className="size-5" />
+        </span>
+        Log
+      </button>
+    </li>
+  );
+}
+
+/** Sign out, clearing what was cached for offline use first. */
+export function SignOutButton({ signOut }: { signOut: () => Promise<void> }) {
+  return (
+    <form action={signOut} onSubmit={clearOfflineData}>
+      <Button type="submit" variant="outline">
+        <LogOut aria-hidden />
+        Sign out
+      </Button>
+    </form>
   );
 }
 
@@ -104,6 +129,7 @@ export function AppShell({
     pathname === href || pathname.startsWith(`${href}/`);
   const activeOnPhone = (item: NavItem) =>
     active(item.href) || (item.phoneAlso ?? []).some(active);
+  const phoneTabs = NAV.filter((item) => !item.desktopOnly);
 
   return (
     <div className="min-h-dvh pb-20 md:pb-0">
@@ -140,7 +166,31 @@ export function AppShell({
           </nav>
           <div className="ml-auto flex items-center gap-2">
             <LogButton />
-            <form action={signOut} onSubmit={clearOfflineData}>
+            <Button
+              asChild
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "md:hidden",
+                active("/settings")
+                  ? "bg-surface-2 text-ink"
+                  : "text-ink-muted",
+              )}
+            >
+              <Link
+                href="/settings"
+                aria-label="Settings"
+                aria-current={active("/settings") ? "page" : undefined}
+              >
+                <Settings aria-hidden />
+              </Link>
+            </Button>
+            {/* On a phone, Sign out lives in Settings, away from the thumb. */}
+            <form
+              action={signOut}
+              onSubmit={clearOfflineData}
+              className="hidden md:block"
+            >
               <Button
                 type="submit"
                 variant="ghost"
@@ -159,26 +209,32 @@ export function AppShell({
         {children}
       </main>
 
-      <MobileLogButton />
       <nav
         aria-label="Main"
         className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-bg pb-[env(safe-area-inset-bottom)] md:hidden"
       >
         <ul className="flex h-16 items-stretch justify-around">
-          {NAV.filter((item) => !item.desktopOnly).map((item) => (
-            <li key={item.href} className="flex">
-              <Link
-                href={item.href}
-                aria-current={activeOnPhone(item) ? "page" : undefined}
-                className={cn(
-                  "flex min-w-16 flex-col items-center justify-center gap-1 px-3 text-xs [&_svg]:size-5",
-                  activeOnPhone(item) ? "text-ink" : "text-ink-muted",
-                )}
-              >
-                {item.icon}
-                {item.label}
-              </Link>
-            </li>
+          {phoneTabs.map((item, i) => (
+            <Fragment key={item.href}>
+              {i === Math.floor(phoneTabs.length / 2) ? (
+                <TabBarLogButton />
+              ) : null}
+              <li className="flex">
+                <Link
+                  href={item.href}
+                  aria-current={activeOnPhone(item) ? "page" : undefined}
+                  className={cn(
+                    "relative flex min-w-16 flex-col items-center justify-center gap-1 px-2 text-xs [&_svg]:size-5",
+                    activeOnPhone(item)
+                      ? "font-medium text-ink before:absolute before:inset-x-4 before:top-0 before:h-0.5 before:rounded-full before:bg-accent [&_svg]:text-accent"
+                      : "text-ink-muted",
+                  )}
+                >
+                  {item.icon}
+                  {item.label}
+                </Link>
+              </li>
+            </Fragment>
           ))}
         </ul>
       </nav>
