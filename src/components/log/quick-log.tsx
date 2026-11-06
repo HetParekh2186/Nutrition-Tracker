@@ -625,7 +625,8 @@ export function QuickLog({
           <Drawer.Description className="sr-only">
             Search for a food, choose an amount and log it.
           </Drawer.Description>
-          <div className="flex min-h-[min(60dvh,calc(var(--vv-height,100dvh)-3rem))] flex-1 flex-col">
+          {/* Scrolls when a step is taller than the space above the keyboard. */}
+          <div className="flex min-h-[min(60dvh,calc(var(--vv-height,100dvh)-3rem))] flex-1 flex-col overflow-y-auto overscroll-contain">
             {panel}
           </div>
         </Drawer.Content>

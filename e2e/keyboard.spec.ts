@@ -93,3 +93,30 @@ test("a dialog stays above the keyboard", async ({ page }) => {
     await page.request.delete(`/api/diary/${id}`);
   }
 });
+
+test("typing a barcode closes the camera and keeps the box in view", async ({
+  page,
+  isMobile,
+}) => {
+  // A camera that never starts keeps the viewfinder open, as while aiming.
+  await page.addInitScript(() => {
+    navigator.mediaDevices.getUserMedia = () => new Promise(() => {});
+  });
+  await signInAsDemo(page);
+  await openQuickLog(page, isMobile);
+  await page.getByRole("button", { name: "Scan a barcode" }).click();
+  await expect(page.getByLabel("Camera viewfinder")).toBeVisible();
+
+  await page.getByLabel("Digits under the barcode").click();
+  const top = await raiseKeyboard(page);
+  await expect(page.getByLabel("Camera viewfinder")).toHaveCount(0);
+  const digits = page.getByLabel("Digits under the barcode");
+  await expect
+    .poll(async () => {
+      const box = (await digits.boundingBox())!;
+      return box.y + box.height;
+    })
+    .toBeLessThanOrEqual(top);
+  await digits.fill("3017620422003");
+  await expect(page.getByRole("button", { name: "Look up" })).toBeEnabled();
+});
