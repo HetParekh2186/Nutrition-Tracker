@@ -17,6 +17,8 @@ export type ExplainContext = {
   rating: number | null;
   /** The most similar recipe you have cooked more than once, if any. */
   similarCooked: { title: string; count: number } | null;
+  /** Ingredients the user has not logged; none means all familiar. */
+  newIngredients?: string[];
   /**
    * Whether taste similarity stands out among this list's candidates.
    * Defaults to an absolute threshold when not given.
@@ -61,6 +63,11 @@ function reasonFor(
               : `${ctx.similarCooked.count} times`
           }`
         : "Similar to meals you cook often";
+    case "F":
+      if (t.F < 0.8) return null;
+      return ctx.newIngredients?.length
+        ? "Mostly foods you already eat"
+        : "Made from foods you already eat";
     case "C":
       if (!ctx.cuisine || t.C < 0.3) return null;
       return ctx.likedCuisine

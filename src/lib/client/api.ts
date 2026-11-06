@@ -209,6 +209,11 @@ export const api = {
     streamRequest("/api/recipes/generate", input),
   adaptRecipe: (id: string, input: z.input<typeof AdaptRequest>) =>
     streamRequest(`/api/recipes/${id}/adapt`, input),
+  addToPantry: (items: string[]) =>
+    request<{ pantry: string[] }>("/api/pantry", {
+      method: "POST",
+      body: JSON.stringify({ items }),
+    }),
 };
 
 async function streamRequest(path: string, body: unknown): Promise<Response> {

@@ -31,6 +31,7 @@ export function GenerateForm({
   const [request, setRequest] = useState(initialRequest);
   const [slot, setSlot] = useState<MealSlot>(initialSlot);
   const [servings, setServings] = useState("2");
+  const [fromMyFoods, setFromMyFoods] = useState(true);
   const [status, setStatus] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
@@ -47,6 +48,7 @@ export function GenerateForm({
         request: request.trim(),
         slot,
         servings: Math.round(n),
+        fromMyFoods,
       });
       let result: Record<string, unknown> | null = null;
       await readNdjson(res, (event) => {
@@ -59,13 +61,17 @@ export function GenerateForm({
           recipeId: string;
           offTarget?: boolean;
           unmatched?: string[];
+          newIngredients?: string[];
         };
+        const fresh = r.newIngredients?.length ?? 0;
         toast.success("Recipe ready", {
           description: r.offTarget
             ? "It is still more than 10% off one of your targets."
             : r.unmatched?.length
               ? `${r.unmatched.length} ingredient(s) need a food match.`
-              : "Macros computed from USDA data.",
+              : fresh
+                ? `${fresh} ingredient${fresh === 1 ? " is" : "s are"} new to you. Check you have ${fresh === 1 ? "it" : "them"}.`
+                : "Made from foods you already eat.",
         });
         router.push(`/recipes/${r.recipeId}`);
       }
@@ -113,6 +119,23 @@ export function GenerateForm({
           Targets default to what you have left for this meal today.
         </p>
       </div>
+
+      <label className="flex cursor-pointer items-start gap-2.5 text-sm">
+        <input
+          type="checkbox"
+          checked={fromMyFoods}
+          onChange={(e) => setFromMyFoods(e.target.checked)}
+          disabled={running}
+          className="mt-0.5 size-4 accent-[var(--ink)]"
+        />
+        <span>
+          Build it from foods I already eat
+          <span className="block text-xs text-ink-muted">
+            Uses what you log, with at most 2 new ingredients. You will be asked
+            whether you have them.
+          </span>
+        </span>
+      </label>
 
       <div className="grid max-w-[8rem] gap-1.5">
         <Label htmlFor="gen-servings">Servings</Label>

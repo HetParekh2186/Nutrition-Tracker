@@ -56,7 +56,7 @@ const CTX: ExplainContext = {
 describe("explain", () => {
   it("gives the spec's chips for the worked example", () => {
     const reasons = explain(
-      { M: 0.889, T: 0.8, C: 0, N: 1, R: 0.6, D: 0 },
+      { M: 0.889, T: 0.8, F: 0.5, C: 0, N: 1, R: 0.6, D: 0 },
       CTX,
       2,
     );
@@ -68,7 +68,7 @@ describe("explain", () => {
 
   it("names protein when it fits best", () => {
     const reasons = explain(
-      { M: 0.9, T: 0.5, C: 0, N: 1, R: 0.6, D: 0 },
+      { M: 0.9, T: 0.5, F: 0.5, C: 0, N: 1, R: 0.6, D: 0 },
       { ...CTX, serving: { kcal: 600, proteinG: 49, carbsG: 60, fatG: 20 } },
     );
     expect(reasons[0]).toBe("Fits your remaining 50 g protein");
@@ -76,7 +76,7 @@ describe("explain", () => {
 
   it("mentions a dish you cooked twice", () => {
     const reasons = explain(
-      { M: 0.3, T: 0.9, C: 0, N: 0, R: 0.6, D: 0 },
+      { M: 0.3, T: 0.9, F: 0.5, C: 0, N: 0, R: 0.6, D: 0 },
       { ...CTX, similarCooked: { title: "Butter chicken", count: 2 } },
     );
     expect(reasons[0]).toBe("Like the butter chicken you cooked twice");
@@ -84,17 +84,25 @@ describe("explain", () => {
 
   it("calls out liked cuisines and high ratings", () => {
     const reasons = explain(
-      { M: 0.2, T: 0.4, C: 1, N: 0, R: 1, D: 0 },
+      { M: 0.2, T: 0.4, F: 0.5, C: 1, N: 0, R: 1, D: 0 },
       { ...CTX, cuisine: "indian", likedCuisine: true, rating: 5 },
     );
     expect(reasons).toContain("You love Indian food");
     expect(reasons).toContain("You rated it 5 stars");
   });
 
+  it("says when a recipe uses foods you already eat", () => {
+    const terms = { M: 0.2, T: 0.4, F: 1, C: 0, N: 0, R: 0.6, D: 0 };
+    expect(explain(terms, CTX)[0]).toBe("Made from foods you already eat");
+    expect(
+      explain({ ...terms, F: 0.85 }, { ...CTX, newIngredients: ["sumac"] })[0],
+    ).toBe("Mostly foods you already eat");
+  });
+
   it("always returns at least one reason", () => {
     expect(
       explain(
-        { M: 0, T: 0, C: 0, N: 0, R: 0, D: 0 },
+        { M: 0, T: 0, F: 0.5, C: 0, N: 0, R: 0, D: 0 },
         { ...CTX, daysSinceCooked: 3 },
       ),
     ).toEqual(["Good for dinner"]);

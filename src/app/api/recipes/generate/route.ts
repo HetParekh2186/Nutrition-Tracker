@@ -23,6 +23,7 @@ export const POST = route(async (request: Request) => {
       servings: input.servings,
       target: input.target,
       date,
+      fromMyFoods: input.fromMyFoods,
     });
     const result = await runGeneration(
       productionDeps(userId, (message) => send({ type: "status", message })),

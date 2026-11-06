@@ -32,6 +32,8 @@ export type PreferencesDTO = {
   equipment: Equipment[];
   spiceLevel: number | null;
   notes: string | null;
+  /** Ingredients in their kitchen that they do not log. */
+  pantry: string[];
 };
 
 export type TargetRowDTO = {

@@ -67,6 +67,14 @@ export function PreferencesFields({
 
       {compact ? null : (
         <>
+          <ChipInput
+            label="In your kitchen"
+            hint="Ingredients you have but do not log, like spices and oils. Recipes count these as foods you have and never ask about them."
+            values={value.pantry}
+            onChange={(v) => set("pantry", v)}
+            placeholder="tahini, cumin, soy sauce"
+          />
+
           <div className="grid max-w-xs gap-1.5">
             <Label htmlFor="max-cook">Longest you want to cook (minutes)</Label>
             <Input

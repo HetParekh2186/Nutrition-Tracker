@@ -27,7 +27,7 @@ type Ctx = { params: Promise<{ id: string }> };
 export const POST = route(async (request: Request, { params }: Ctx) => {
   const userId = await requireUserId();
   const id = parseWith(z.uuid(), (await params).id);
-  const { instructions, servings } = parseWith(
+  const { instructions, servings, missing } = parseWith(
     AdaptRequest,
     await readJson(request),
   );
@@ -44,6 +44,7 @@ export const POST = route(async (request: Request, { params }: Ctx) => {
       // protein"). The adapted macros are recomputed from USDA data.
       target: undefined,
       date,
+      missing,
     });
     const result = await runGeneration(
       productionDeps(userId, (message) => send({ type: "status", message })),

@@ -41,11 +41,13 @@ One number is fixed by design: every nutrient value on screen traces to USDA Foo
 
 ![Describe a meal, then check every match before logging](docs/media/plain-english.png)
 
-**For You.** Recipes ranked by how well one serving fits what is left of your day, how close it is to what you usually cook, and your food rules. Each card says why it was suggested. Allergies and diets are hard filters, never just a lower score.
+**For You.** Recipes ranked by how well one serving fits what is left of your day, how much of it you already eat, how close it is to what you usually cook, and your food rules. Each card says why it was suggested and lists any ingredients that would be new to you. Allergies and diets are hard filters, never just a lower score.
 
 ![Suggestions for dinner, each with the reasons it ranked where it did](docs/media/for-you.png)
 
 **Recipes.** Starter recipes plus your own: write one by hand, generate one with Claude for a target ("high protein, under 600 kcal"), or adapt one ("make it dairy free"). Macros are always recomputed from USDA data, and scale with servings.
+
+**Built from what you eat.** Generated recipes use the foods you log, with at most 2 new ingredients; a draft that needs more gets one revision. Any recipe that uses something you have not logged asks about it: "I have it" adds it to your kitchen list so it is never asked again, and "I don't" offers to swap it for foods you already eat. Foods match by their base ingredient, so a logged raw egg covers scrambled eggs, while logged chicken does not cover chicken stock. Water, salt and pepper never count as new, and spices or oils you have but do not log go in Settings under "In your kitchen".
 
 ![A recipe with scaled ingredients and per-serving nutrition](docs/media/recipe.png)
 
@@ -97,17 +99,18 @@ The browser and the nightly cron both call the same Next.js route handlers, whic
 Candidates are recipes you can see that match the meal slot, your diet and your time limit, and contain nothing you excluded. Each is scored:
 
 ```
-score = 0.35 M + 0.30 T + 0.15 C + 0.10 N + 0.10 R - D
+score = 0.30 M + 0.25 T + 0.20 F + 0.10 C + 0.075 N + 0.075 R - D
 ```
 
-| Term | Meaning            | How it is computed (all 0 to 1)                                         |
-| ---- | ------------------ | ----------------------------------------------------------------------- |
-| M    | Macro fit          | How close one serving is to this slot's remaining budget                |
-| T    | Taste similarity   | Cosine similarity between the recipe and your taste embedding, rescaled |
-| C    | Cuisine preference | 1 for cuisines you like, else a weight learned from what you cook       |
-| N    | Novelty            | 1 if not cooked in the last 14 days, else days since cooked / 14        |
-| R    | Rating             | Your rating / 5, or 0.6 if unrated                                      |
-| D    | Dislikes           | 0.15 for each disliked ingredient                                       |
+| Term | Meaning            | How it is computed (all 0 to 1)                                                                     |
+| ---- | ------------------ | --------------------------------------------------------------------------------------------------- |
+| M    | Macro fit          | How close one serving is to this slot's remaining budget                                            |
+| T    | Taste similarity   | Cosine similarity between the recipe and your taste embedding, rescaled                             |
+| F    | Familiar foods     | Share of the ingredients you already log or keep in your kitchen; 0.5 until you have logged 5 foods |
+| C    | Cuisine preference | 1 for cuisines you like, else a weight learned from what you cook                                   |
+| N    | Novelty            | 1 if not cooked in the last 14 days, else days since cooked / 14                                    |
+| R    | Rating             | Your rating / 5, or 0.6 if unrated                                                                  |
+| D    | Dislikes           | 0.15 for each disliked ingredient                                                                   |
 
 Macro fit is one minus the mean relative error across calories, protein, carbs and fat:
 
@@ -123,11 +126,11 @@ M = 1 - (1/4) × Σ min(1, |recipe_k - budget_k| / budget_k)
 - Fat: 5 / 25 = 0.200
 - Mean error: 0.445 / 4 = 0.111, so M = **0.889**
 
-With taste similarity 0.80, a liked cuisine, not cooked recently and unrated:
+With taste similarity 0.80, 4 of its 5 ingredients foods you already eat, a liked cuisine, not cooked recently and unrated:
 
 ```
-0.35 × 0.889 + 0.30 × 0.80 + 0.15 × 1 + 0.10 × 1 + 0.10 × 0.6
-  = 0.311 + 0.240 + 0.150 + 0.100 + 0.060 = 0.861
+0.30 × 0.889 + 0.25 × 0.80 + 0.20 × 0.80 + 0.10 × 1 + 0.075 × 1 + 0.075 × 0.6
+  = 0.267 + 0.200 + 0.160 + 0.100 + 0.075 + 0.045 = 0.847
 ```
 
 The two largest terms become the card's reasons: "Fits your remaining dinner macros" and "Similar to meals you cook often".
@@ -181,9 +184,9 @@ pnpm test:coverage    # with coverage for lib/nutrition and lib/recommend
 pnpm test:e2e         # Playwright, desktop and a Pixel 7 viewport
 ```
 
-- **Unit:** every function in `lib/nutrition` and `lib/recommend`, using the worked examples above as fixtures, with coverage held at 90% of lines. Unit conversion, barcode parsing, the Mise score (Nutri-Score points checked against Nutella's published grade), substitutions and the Cook Mode tools are tested too.
+- **Unit:** every function in `lib/nutrition` and `lib/recommend`, using the worked examples above as fixtures, with coverage held at 90% of lines. Unit conversion, barcode parsing, the Mise score (Nutri-Score points checked against Nutella's published grade), substitutions, matching recipe ingredients to the foods you log, and the Cook Mode tools are tested too.
 - **LLM contracts:** recorded Claude responses checked against the Zod schemas, so tests never call the API.
-- **End to end:** both key flows (plain-English logging, and suggest, cook and log), plus search, editing a logged entry, phone navigation, recipes, onboarding, barcode lookup (typed and scanned from a fake camera feed) creating a food from an unknown barcode, and the Mise score on search results and scanned products, on desktop and mobile.
+- **End to end:** both key flows (plain-English logging, and suggest, cook and log), plus search, editing a logged entry, phone navigation, recipes, onboarding, barcode lookup (typed and scanned from a fake camera feed) creating a food from an unknown barcode, asking about new ingredients in a recipe, and the Mise score on search results and scanned products, on desktop and mobile.
 - **Accessibility:** axe checks every main page for WCAG 2.1 AA in both themes.
 - **Performance:** on a production build, Today's Largest Contentful Paint is about 0.35 s on desktop and 0.56 s on a throttled phone, with no layout shift. Food search has a p95 of about 105 ms against the hosted database.
 

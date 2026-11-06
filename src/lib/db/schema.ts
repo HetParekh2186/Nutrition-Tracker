@@ -171,6 +171,12 @@ export const dietaryPreferences = pgTable(
       .default(sql`'{}'`),
     spiceLevel: smallint(),
     notes: text(), // free text passed to the LLM
+    // Ingredients they have without logging them ("tahini"); recipes count
+    // these as familiar and never ask about them.
+    pantry: text()
+      .array()
+      .notNull()
+      .default(sql`'{}'`),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

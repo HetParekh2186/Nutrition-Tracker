@@ -24,6 +24,11 @@ import { SlotPicker } from "@/components/log/slot-picker";
 import { useQuickLog } from "@/components/log/quick-log-provider";
 import { MacroChip } from "@/components/nutrition/macro-chip";
 import { NutrientBars } from "@/components/nutrition/nutrient-bars";
+import {
+  NewIngredients,
+  type Answer,
+  type NewIngredient,
+} from "@/components/recipes/new-ingredients";
 import { totalMinutes } from "@/components/recipes/recipe-card";
 import { RatingStars } from "@/components/recipes/rating-stars";
 import { TypographicCover } from "@/components/recipes/typographic-cover";
@@ -284,11 +289,18 @@ function AdaptDialog({
 export function RecipeView({
   initial,
   aiEnabled,
+  newIngredients = [],
 }: {
   initial: RecipeDetailDTO;
   aiEnabled: boolean;
+  /** Ingredients the user has not logged, to ask about. */
+  newIngredients?: NewIngredient[];
 }) {
   const router = useRouter();
+  const [answers, setAnswers] = useState<Record<number, Answer>>({});
+  const newIds = new Set(
+    newIngredients.filter((i) => answers[i.id] !== "have").map((i) => i.id),
+  );
   const [servings, setServings] = useState(initial.servings);
   const [dialog, setDialog] = useState<"log" | "adapt" | null>(null);
   const { data } = useQuery({
@@ -456,6 +468,17 @@ export function RecipeView({
         </div>
       </header>
 
+      {newIngredients.length ? (
+        <NewIngredients
+          recipeId={recipe.id}
+          items={newIngredients}
+          answers={answers}
+          onAnswer={(id, answer) => setAnswers((a) => ({ ...a, [id]: answer }))}
+          servings={servings}
+          aiEnabled={aiEnabled}
+        />
+      ) : null}
+
       <section
         aria-labelledby="per-serving-heading"
         className="grid gap-4 rounded-xl border border-border bg-surface p-5"
@@ -532,6 +555,11 @@ export function RecipeView({
                             ing.displayText,
                             shownFactor(ing),
                           )}
+                          {newIds.has(ing.id) ? (
+                            <span className="ml-2 rounded-full border border-accent/50 px-1.5 py-px align-middle text-[0.6875rem] text-ink-muted">
+                              New to you
+                            </span>
+                          ) : null}
                         </span>
                         {ing.foodName ? (
                           <span className="block truncate text-xs text-ink-muted">

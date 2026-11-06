@@ -1,0 +1,1 @@
+ALTER TABLE "dietary_preferences" ADD COLUMN "pantry" text[] DEFAULT '{}' NOT NULL;

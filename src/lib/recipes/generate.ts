@@ -13,9 +13,13 @@ import type { NutrientMap } from "@/lib/nutrition/math";
 import { expandExclusion, wordStartPattern } from "./allergens";
 import { needsRevision, recipeNutrition } from "./compute";
 import { ANIMAL_FOOD_NAMES, dietBreaks } from "./diet";
+import { plainName, unfamiliar, type Known } from "./familiar";
 
 /** Below this, an ingredient is saved unmatched for the user to fix. */
 export const MIN_MATCH_CONFIDENCE = 0.5;
+
+/** New ingredients a recipe may bring beyond the foods the user eats. */
+export const MAX_NEW_INGREDIENTS = 2;
 
 export type DraftContext = {
   request: string;
@@ -35,6 +39,21 @@ export type DraftContext = {
   };
   /** For adaptation: the recipe being changed. */
   parent?: RecipeInput | undefined;
+  /**
+   * Build from the foods they already eat. Absent when they turned it off
+   * or have too little history to go on.
+   */
+  familiar?:
+    | {
+        /** Short names of what they log, most frequent first. */
+        foods: string[];
+        /** Ingredients they said they have without logging. */
+        pantry: string[];
+        known: Known;
+        /** Ingredients they said they do not have. */
+        missing: string[];
+      }
+    | undefined;
 };
 
 export type Revision = {
@@ -66,6 +85,8 @@ export type GenerateResult = {
   revised: boolean;
   /** Still more than 10% off the target after the one revision round. */
   offTarget: boolean;
+  /** Ingredients the user has not logged, to ask whether they have them. */
+  newIngredients: string[];
 };
 
 /**
@@ -167,11 +188,49 @@ async function matchAndCompute(
   };
 }
 
+/**
+ * Ingredients that would be new to the user. When adapting, only what the
+ * original did not already use counts against the limit.
+ */
+export function newToUser(
+  draft: GeneratedRecipe,
+  matchedNames: string[],
+  ctx: DraftContext,
+): { all: string[]; added: string[]; stillMissing: string[] } {
+  if (!ctx.familiar) return { all: [], added: [], stillMissing: [] };
+  const refs = draft.ingredients.map((ing, i) => ({
+    displayText: ing.display_text,
+    foodName: matchedNames[i] || null,
+  }));
+  const all = unfamiliar(refs, ctx.familiar.known).map((r) =>
+    plainName(r.displayText),
+  );
+  const before = new Set(
+    (ctx.parent?.ingredients ?? []).map((i) => plainName(i.displayText)),
+  );
+  const missing = ctx.familiar.missing.map((m) => m.toLowerCase());
+  const stillMissing = refs
+    .filter((r) =>
+      missing.some((m) =>
+        `${plainName(r.displayText)} ${r.foodName ?? ""}`
+          .toLowerCase()
+          .includes(m),
+      ),
+    )
+    .map((r) => plainName(r.displayText));
+  return { all, added: all.filter((n) => !before.has(n)), stillMissing };
+}
+
 function describeProblems(
   computed: Macros,
   target: Partial<Macros> | undefined,
   excluded: string[],
   offDiet: string[],
+  fresh: ReturnType<typeof newToUser> = {
+    all: [],
+    added: [],
+    stillMissing: [],
+  },
 ): string[] {
   const problems: string[] = [];
   if (target && needsRevision(computed, target)) {
@@ -200,6 +259,16 @@ function describeProblems(
       `It uses ${offDiet.join(", ")}, which their diet does not allow. Replace them.`,
     );
   }
+  if (fresh.added.length > MAX_NEW_INGREDIENTS) {
+    problems.push(
+      `It uses ${fresh.added.length} ingredients they have not eaten before (${fresh.added.join(", ")}). Keep at most ${MAX_NEW_INGREDIENTS} of them and use foods they already eat for the rest.`,
+    );
+  }
+  if (fresh.stillMissing.length) {
+    problems.push(
+      `It still uses ${fresh.stillMissing.join(", ")}, which they do not have. Replace them with foods they already eat, or leave them out.`,
+    );
+  }
   return problems;
 }
 
@@ -216,11 +285,13 @@ export async function runGeneration(
   let matched = await matchAndCompute(deps, draft, ctx.servings);
   let excluded = excludedHits(draft, ctx.preferences.excluded);
   let offDiet = dietHits(draft, ctx.preferences.eats, matched.matchedNames);
+  let fresh = newToUser(draft, matched.matchedNames, ctx);
   let problems = describeProblems(
     matched.nutrition.macros,
     ctx.target,
     excluded,
     offDiet,
+    fresh,
   );
   let revised = false;
 
@@ -236,11 +307,13 @@ export async function runGeneration(
     matched = await matchAndCompute(deps, draft, ctx.servings);
     excluded = excludedHits(draft, ctx.preferences.excluded);
     offDiet = dietHits(draft, ctx.preferences.eats, matched.matchedNames);
+    fresh = newToUser(draft, matched.matchedNames, ctx);
     problems = describeProblems(
       matched.nutrition.macros,
       ctx.target,
       excluded,
       offDiet,
+      fresh,
     );
   }
   if (excluded.length) {
@@ -267,5 +340,6 @@ export async function runGeneration(
     offTarget: Boolean(
       ctx.target && needsRevision(matched.nutrition.macros, ctx.target),
     ),
+    newIngredients: fresh.all,
   };
 }

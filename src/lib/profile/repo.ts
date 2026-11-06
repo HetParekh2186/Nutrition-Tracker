@@ -177,6 +177,7 @@ export async function getPreferences(userId: string): Promise<PreferencesDTO> {
     ),
     spiceLevel: row?.spiceLevel ?? null,
     notes: row?.notes ?? null,
+    pantry: row?.pantry ?? [],
   };
 }
 

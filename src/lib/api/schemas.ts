@@ -179,6 +179,11 @@ export const PreferencesUpdateSchema = z.object({
   equipment: z.array(z.enum(EQUIPMENT)).max(10).optional(),
   spiceLevel: z.number().int().min(0).max(3).nullable().optional(),
   notes: z.string().trim().max(500).nullable().optional(),
+  pantry: z
+    .array(z.string().trim().toLowerCase().min(1).max(60))
+    .max(200)
+    .transform((list) => [...new Set(list)])
+    .optional(),
 });
 export type PreferencesUpdateInput = z.input<typeof PreferencesUpdateSchema>;
 
@@ -279,6 +284,8 @@ export const GenerateRequest = z.object({
   request: z.string().trim().min(3).max(500),
   slot: MealSlotSchema.optional(),
   servings: z.number().int().min(1).max(12).default(2),
+  /** Build from the foods they already eat. */
+  fromMyFoods: z.boolean().default(true),
   /** Per-serving targets; defaults to the slot's remaining budget. */
   target: z
     .object({
@@ -292,9 +299,18 @@ export const GenerateRequest = z.object({
 });
 export type GenerateRequestInput = z.input<typeof GenerateRequest>;
 
+const IngredientNames = z.array(z.string().trim().min(1).max(80)).max(30);
+
 export const AdaptRequest = z.object({
   instructions: z.string().trim().min(3).max(500),
   servings: z.number().int().min(1).max(12).optional(),
+  /** Ingredients they said they do not have, to swap out. */
+  missing: IngredientNames.optional(),
+});
+
+/** "I have it" answers, added to the kitchen list. */
+export const PantryAddRequest = z.object({
+  items: IngredientNames.min(1),
 });
 
 // ---------- Recommendations (Phase 4) ----------

@@ -10,6 +10,8 @@ export type RecommendationDTO = {
   breakdown: Terms;
   reasons: string[];
   saved: boolean;
+  /** Ingredients the user has not logged, shown on the card. */
+  newIngredients: string[];
 };
 
 export type RecommendationsDTO = {
