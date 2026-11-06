@@ -61,7 +61,7 @@ export function TodayView({
   const next = addDays(date, 1);
 
   return (
-    <div className="grid grid-cols-1 gap-10">
+    <div className="grid grid-cols-1 gap-6 md:gap-10">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="num text-xs tracking-widest text-ink-muted uppercase">
@@ -119,7 +119,7 @@ export function TodayView({
         </p>
       </section>
 
-      <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-8">
+      <div className="grid grid-cols-1 gap-6 md:gap-10 lg:grid-cols-2 lg:gap-8">
         <section
           aria-labelledby="meals-heading"
           className="grid grid-cols-1 content-start gap-4"
@@ -150,7 +150,9 @@ export function TodayView({
           <h2 id="nutrients-heading" className="text-xl">
             Nutrients
           </h2>
-          <NutrientBars nutrients={s.nutrients} />
+          {/* Closed by default so Meals and the totals stay in reach;
+              each group's header still shows how many targets are met. */}
+          <NutrientBars nutrients={s.nutrients} openGroups={[]} />
         </section>
       </div>
     </div>

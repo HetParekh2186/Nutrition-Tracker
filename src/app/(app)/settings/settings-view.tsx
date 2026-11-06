@@ -1,5 +1,6 @@
 "use client";
 
+import { SignOutButton } from "@/components/shell/app-shell";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -58,12 +59,16 @@ export function SettingsView({
   preferences,
   targets,
   timezones,
+  email,
+  signOut,
 }: {
   profile: ProfileDTO;
   preferences: PreferencesDTO;
   targets: TargetRowDTO[];
   /** Built on the server so server and browser render the same list. */
   timezones: string[];
+  email: string | null;
+  signOut: () => Promise<void>;
 }) {
   const router = useRouter();
   const qc = useQueryClient();
@@ -266,6 +271,14 @@ export function SettingsView({
         description="Theme follows your device unless you pick one."
       >
         <ThemeToggle />
+      </Section>
+
+      <Section
+        id="account-heading"
+        title="Account"
+        description={email ? `Signed in as ${email}.` : "Signed in."}
+      >
+        <SignOutButton signOut={signOut} />
       </Section>
     </div>
   );

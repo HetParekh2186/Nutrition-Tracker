@@ -123,9 +123,9 @@ export function DayRing({
   const over = kcalLeft < 0;
 
   return (
-    <div className="flex flex-col items-center gap-8 md:flex-row md:items-center md:gap-12">
+    <div className="flex flex-col items-center gap-5 md:flex-row md:items-center md:gap-12">
       <figure
-        className="relative aspect-square w-full max-w-[22.5rem] shrink-0"
+        className="relative aspect-square w-full max-w-52 shrink-0 md:max-w-[22.5rem]"
         aria-label={`${formatAmount(Math.abs(kcalLeft), "kcal")} kcal ${over ? "over" : "remaining"}`}
       >
         <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="size-full" aria-hidden>
@@ -136,7 +136,7 @@ export function DayRing({
         <figcaption className="absolute inset-0 flex flex-col items-center justify-center">
           <AnimatedNumber
             value={formatAmount(Math.abs(kcalLeft), "kcal")}
-            className={`text-[clamp(2.75rem,13vw,4rem)] tracking-tight ${over ? "text-over" : "text-ink"}`}
+            className={`text-[clamp(2rem,10vw,4rem)] tracking-tight ${over ? "text-over" : "text-ink"}`}
           />
           <span className="mt-2 text-sm text-ink-muted">
             {over ? "kcal over" : "kcal remaining"}
@@ -144,7 +144,7 @@ export function DayRing({
         </figcaption>
       </figure>
 
-      <dl className="grid w-full max-w-sm grid-cols-2 gap-x-6 gap-y-5 md:grid-cols-1">
+      <dl className="grid w-full max-w-sm grid-cols-2 gap-x-6 gap-y-3 md:grid-cols-1 md:gap-y-5">
         {arcs.map((arc) => {
           const left = arc.remaining;
           return (
