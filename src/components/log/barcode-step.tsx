@@ -128,6 +128,13 @@ export function BarcodeStep({
           placeholder="3017620422003"
           value={code}
           onChange={(e) => setCode(e.target.value)}
+          onFocus={(e) => {
+            // Typing means the camera is not needed, and the viewfinder
+            // would push this box under the keyboard.
+            setScanning(false);
+            const input = e.currentTarget;
+            setTimeout(() => input.scrollIntoView({ block: "center" }), 300);
+          }}
           aria-invalid={(code.length > 0 && !valid) || undefined}
           aria-describedby="barcode-help"
         />

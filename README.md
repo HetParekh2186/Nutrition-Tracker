@@ -29,7 +29,7 @@ One number is fixed by design: every nutrient value on screen traces to USDA Foo
 
 ![Today, with the calorie ring, macro totals and remaining budget](docs/media/today.png)
 
-**Quick Log.** Press Ctrl+K (or the plus button on a phone) to search more than 8,000 USDA foods. Results rank foods you log often first, and portions come from USDA ("1 large egg", "1 cup, chopped"). On a phone, the barcode button opens the camera and scans the product (or type the digits); Open Food Facts fills in the nutrition. If a product is not listed, one tap turns it into a custom food that keeps the barcode, so the next scan finds it.
+**Quick Log.** Press Ctrl+K (or the plus button on a phone) to search more than 8,000 USDA foods. Results rank foods you log often first, and portions come from USDA ("1 large egg", "1 cup, chopped"). On a phone, the barcode button opens the camera and scans the product (or tap the digits box to type them, which closes the camera); Open Food Facts fills in the nutrition. If a product is not listed, one tap turns it into a custom food that keeps the barcode, so the next scan finds it.
 
 **Mise score.** Every food in search, My foods and the amount step shows a score from 0 to 100 (Excellent, Good, Poor or Bad), with a breakdown one tap away. Nutrition counts for 60 points, using Nutri-Score; additives of concern for 30, with a high-risk one such as a nitrite capping the score at 49; and an organic label for 10. Additives and labels come from Open Food Facts, so USDA and custom foods are scored on nutrition alone, and the breakdown says so.
 
