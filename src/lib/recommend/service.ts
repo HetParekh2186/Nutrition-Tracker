@@ -15,6 +15,13 @@ import { daysBetween, localDate } from "@/lib/nutrition/dates";
 import { getPreferences, getProfile } from "@/lib/profile/repo";
 import { expandExclusions, wordStartPattern } from "@/lib/recipes/allergens";
 import { dietBreaks } from "@/lib/recipes/diet";
+import {
+  familiarity,
+  plainName,
+  unfamiliar,
+  type IngredientRef,
+} from "@/lib/recipes/familiar";
+import { knownFoods } from "@/lib/recipes/familiar-repo";
 import { summariesFor } from "@/lib/recipes/repo";
 
 import { slotBudget } from "./budget";
@@ -34,7 +41,10 @@ import {
 import { getTasteProfile } from "./taste-repo";
 import type { RecommendationsDTO } from "./types";
 
-type CandidateRow = typeof recipes.$inferSelect & { ingredient_text: string };
+type CandidateRow = typeof recipes.$inferSelect & {
+  ingredient_text: string;
+  ingredients: IngredientRef[];
+};
 
 /** Step 1: recipes the user may eat, for this slot, within their rules. */
 async function candidates(
@@ -56,7 +66,13 @@ async function candidates(
            coalesce((select string_agg(ri.display_text || ' ' || coalesce(f.name, ''), ' | ')
                        from recipe_ingredients ri
                        left join foods f on f.id = ri.food_id
-                      where ri.recipe_id = r.id), '') as ingredient_text
+                      where ri.recipe_id = r.id), '') as ingredient_text,
+           coalesce((select json_agg(json_build_object(
+                              'displayText', ri.display_text, 'foodName', f.name)
+                              order by ri.position)
+                       from recipe_ingredients ri
+                       left join foods f on f.id = ri.food_id
+                      where ri.recipe_id = r.id), '[]'::json) as ingredients
       from recipes r
      where (r.owner_id is null or r.owner_id = ${userId})
        and ${slot} = any(r.meal_types)
@@ -102,7 +118,13 @@ async function candidates(
     embedding: parseVector(r.embedding),
     createdAt: new Date(r.created_at as string),
     ingredient_text: r.ingredient_text as string,
+    ingredients: parseJson<IngredientRef[]>(r.ingredients) ?? [],
   }));
+}
+
+function parseJson<T>(v: unknown): T | null {
+  if (typeof v === "string") return JSON.parse(v) as T;
+  return (v as T | null) ?? null;
 }
 
 function parseVector(v: unknown): number[] | null {
@@ -118,10 +140,11 @@ export async function getRecommendations(
   limit = 10,
   options: { logImpressions?: boolean } = {},
 ): Promise<RecommendationsDTO> {
-  const [profile, prefs, taste] = await Promise.all([
+  const [profile, prefs, taste, { known }] = await Promise.all([
     getProfile(userId),
     getPreferences(userId),
     getTasteProfile(userId),
+    knownFoods(userId),
   ]);
   const date = localDate(new Date(), profile.timezone);
   const summary = await getDaySummary(userId, date);
@@ -166,6 +189,7 @@ export async function getRecommendations(
       T: tasteSimilarity(
         tasteVector && r.embedding ? cosine(tasteVector, r.embedding) : null,
       ),
+      F: familiarity(r.ingredients, known),
       C: cuisinePreference(r.cuisine, prefs.likedCuisines, learned),
       N: novelty(daysSince),
       R: ratingPrior(state?.rating ?? null),
@@ -173,7 +197,18 @@ export async function getRecommendations(
         disliked.filter((re) => re.test(r.ingredient_text)).length,
       ),
     };
-    return { row: r, summary: s, state, daysSince, terms, score: score(terms) };
+    const fresh = unfamiliar(r.ingredients, known).map((i) =>
+      plainName(i.displayText),
+    );
+    return {
+      row: r,
+      summary: s,
+      state,
+      daysSince,
+      terms,
+      fresh,
+      score: score(terms),
+    };
   });
 
   // Step 3: diversify.
@@ -209,6 +244,7 @@ export async function getRecommendations(
       daysSinceCooked: s.daysSince,
       strongTaste: tasteVector !== null && s.terms.T >= tasteCutoff,
       rating: s.state?.rating ?? null,
+      newIngredients: s.fresh,
       similarCooked:
         similar && similar.sim > 0.75
           ? {
@@ -225,6 +261,7 @@ export async function getRecommendations(
       ) as Terms,
       reasons,
       saved: s.state?.saved ?? false,
+      newIngredients: s.fresh,
     };
   });
 

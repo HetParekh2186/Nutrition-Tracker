@@ -49,8 +49,8 @@ export function ForYouView({ initial }: { initial: RecommendationsDTO }) {
           <div>
             <h1 className="text-2xl">For You</h1>
             <p className="mt-1 text-sm text-ink-muted">
-              Ranked by how well one serving fits what is left of your day, your
-              taste and your food rules.
+              Ranked by how well one serving fits what is left of your day, how
+              much of it you already eat, your taste and your food rules.
             </p>
           </div>
           <Button asChild variant="outline">
@@ -156,6 +156,15 @@ export function ForYouView({ initial }: { initial: RecommendationsDTO }) {
                   footer={
                     <div className="grid gap-3 pt-1">
                       <WhyChips reasons={item.reasons} />
+                      {item.newIngredients.length ? (
+                        <p className="text-xs text-ink-muted">
+                          New to you:{" "}
+                          {item.newIngredients.slice(0, 3).join(", ")}
+                          {item.newIngredients.length > 3
+                            ? ` and ${item.newIngredients.length - 3} more`
+                            : ""}
+                        </p>
+                      ) : null}
                       <div className="flex items-center justify-between gap-2">
                         <span
                           className="num text-xs text-ink-muted"

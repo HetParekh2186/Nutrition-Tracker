@@ -16,8 +16,10 @@ import {
 } from "@/lib/nutrition/math";
 
 import { recipeNutrition } from "./compute";
+import { knownSet } from "./familiar";
 import {
   excludedHits,
+  newToUser,
   runGeneration,
   type DraftContext,
   type GenerateDeps,
@@ -277,5 +279,62 @@ describe("excludedHits with categories", () => {
     };
     expect(excludedHits(shrimpy, ["shellfish"])).toEqual(["shellfish"]);
     expect(excludedHits(recorded, ["shellfish"])).toEqual([]);
+  });
+});
+
+describe("building from the foods they eat", () => {
+  const known = knownSet(
+    [
+      "Chicken, breast, raw",
+      "Rice, white, cooked",
+      "Egg, whole, raw",
+      "Spinach, raw",
+      "Oil, olive",
+      "Onions, raw",
+      "Quinoa, uncooked",
+    ],
+    ["black beans"],
+  );
+  const FAMILIAR: DraftContext = {
+    ...CTX,
+    familiar: { foods: ["chicken", "rice"], pantry: [], known, missing: [] },
+  };
+
+  it("revises a recipe with more than 2 new ingredients", async () => {
+    const { deps } = makeDeps([recorded]);
+    const result = await runGeneration(deps, FAMILIAR);
+    expect(result.revised).toBe(true);
+    const revision = vi.mocked(deps.draft).mock.calls[1]?.[1];
+    expect(revision?.problems.join(" ")).toMatch(
+      /4 ingredients they have not eaten before \(sweet corn, chipotle chili powder, plain greek yogurt/,
+    );
+    // Still new after the one revision: reported so the user is asked.
+    expect(result.newIngredients).toContain("sweet corn");
+    expect(result.newIngredients).not.toContain("quinoa");
+  });
+
+  it("only counts what an adaptation adds, and catches what they lack", () => {
+    const parent = {
+      ingredients: recorded.ingredients.map((i) => ({
+        displayText: i.display_text,
+      })),
+    } as RecipeInput;
+    const fresh = newToUser(
+      recorded,
+      recorded.ingredients.map((i) => i.food_query),
+      {
+        ...FAMILIAR,
+        parent,
+        familiar: { ...FAMILIAR.familiar!, missing: ["quinoa"] },
+      },
+    );
+    expect(fresh.added).toEqual([]);
+    expect(fresh.stillMissing).toEqual(["quinoa"]);
+  });
+
+  it("asks nothing when it is turned off", async () => {
+    const { deps } = makeDeps([recorded]);
+    const result = await runGeneration(deps, CTX);
+    expect(result.newIngredients).toEqual([]);
   });
 });

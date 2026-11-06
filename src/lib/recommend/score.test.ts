@@ -44,15 +44,30 @@ describe("macro fit (M)", () => {
 });
 
 describe("full score", () => {
-  it("matches the worked example: 0.861", () => {
-    const s = score({ M: 0.889, T: 0.8, C: 1, N: 1, R: 0.6, D: 0 });
-    expect(s).toBeCloseTo(0.861, 3);
+  it("matches the worked example: 0.847", () => {
+    const s = score({ M: 0.889, T: 0.8, F: 0.8, C: 1, N: 1, R: 0.6, D: 0 });
+    expect(s).toBeCloseTo(0.847, 3);
   });
 
   it("subtracts the dislike penalty", () => {
     expect(
-      score({ M: 0.889, T: 0.8, C: 1, N: 1, R: 0.6, D: dislikePenalty(2) }),
-    ).toBeCloseTo(0.561, 3);
+      score({
+        M: 0.889,
+        T: 0.8,
+        F: 0.8,
+        C: 1,
+        N: 1,
+        R: 0.6,
+        D: dislikePenalty(2),
+      }),
+    ).toBeCloseTo(0.547, 3);
+  });
+
+  it("ranks a recipe of familiar foods above one of new foods", () => {
+    const base = { M: 0.8, T: 0.5, C: 0, N: 1, R: 0.6, D: 0 };
+    expect(score({ ...base, F: 1 })).toBeGreaterThan(
+      score({ ...base, F: 0.2 }),
+    );
   });
 });
 

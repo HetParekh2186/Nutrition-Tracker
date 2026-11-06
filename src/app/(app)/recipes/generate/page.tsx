@@ -18,10 +18,11 @@ export default async function GeneratePage({
       <div>
         <h1 className="text-2xl">Generate a recipe</h1>
         <p className="mt-2 text-ink-muted">
-          Claude writes the recipe and your food rules are applied. Then Mise
-          matches every ingredient to USDA data and computes the nutrition
-          itself. If it misses your targets by more than 10%, Claude gets one
-          chance to revise.
+          Claude writes the recipe from the foods you already log, and your food
+          rules are applied. Then Mise matches every ingredient to USDA data and
+          computes the nutrition itself. If it misses your targets by more than
+          10%, or needs more than 2 new ingredients, Claude gets one chance to
+          revise.
         </p>
       </div>
       {llmConfigured() ? (

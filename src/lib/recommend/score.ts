@@ -1,15 +1,17 @@
 // The transparent recommendation score (SPEC.md "Recommendation engine"):
-//   score = 0.35 M + 0.30 T + 0.15 C + 0.10 N + 0.10 R - D
+//   score = 0.30 M + 0.25 T + 0.20 F + 0.10 C + 0.075 N + 0.075 R - D
 // No LLM in the ranking loop. Weights live in one config object.
 
 import type { Budget } from "./budget";
 
 export const WEIGHTS = {
-  M: 0.35,
-  T: 0.3,
-  C: 0.15,
-  N: 0.1,
-  R: 0.1,
+  M: 0.3,
+  T: 0.25,
+  /** Familiar: suggestions should use foods the user already eats. */
+  F: 0.2,
+  C: 0.1,
+  N: 0.075,
+  R: 0.075,
   dislikePenalty: 0.15,
   /** Rating prior for recipes the user has not rated. */
   unratedPrior: 0.6,
@@ -20,6 +22,8 @@ export const WEIGHTS = {
 export type Terms = {
   M: number;
   T: number;
+  /** Share of the ingredients the user already eats (see familiar.ts). */
+  F: number;
   C: number;
   N: number;
   R: number;
@@ -86,6 +90,7 @@ export function weightedTerms(t: Terms) {
   return {
     M: WEIGHTS.M * t.M,
     T: WEIGHTS.T * t.T,
+    F: WEIGHTS.F * t.F,
     C: WEIGHTS.C * t.C,
     N: WEIGHTS.N * t.N,
     R: WEIGHTS.R * t.R,
@@ -94,5 +99,5 @@ export function weightedTerms(t: Terms) {
 
 export function score(t: Terms): number {
   const w = weightedTerms(t);
-  return w.M + w.T + w.C + w.N + w.R - t.D;
+  return w.M + w.T + w.F + w.C + w.N + w.R - t.D;
 }

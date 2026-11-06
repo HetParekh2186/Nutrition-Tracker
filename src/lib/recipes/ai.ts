@@ -14,7 +14,14 @@ import { slotBudget } from "@/lib/recommend/budget";
 import type { MealSlot } from "@/lib/db/enums";
 
 import { dietRules } from "./diet";
-import type { DraftContext, GenerateDeps, Revision } from "./generate";
+import { loggedLabels } from "./familiar";
+import { knownFoods } from "./familiar-repo";
+import {
+  MAX_NEW_INGREDIENTS,
+  type DraftContext,
+  type GenerateDeps,
+  type Revision,
+} from "./generate";
 import { createRecipe } from "./repo";
 
 function describeTarget(t: Partial<Macros> | undefined): string {
@@ -28,6 +35,18 @@ function describeTarget(t: Partial<Macros> | undefined): string {
     t.fatG !== undefined ? `${formatAmount(t.fatG, "g")} g fat` : null,
   ].filter(Boolean);
   return `Per serving, aim for about ${parts.join(", ")}.`;
+}
+
+/** The foods they eat, so the recipe needs little they would have to buy. */
+function familiarLines(ctx: DraftContext): string[] {
+  const f = ctx.familiar;
+  if (!f) return [];
+  return [
+    `Foods they already eat, most often first: ${f.foods.join("; ")}.`,
+    f.pantry.length ? `Also in their kitchen: ${f.pantry.join("; ")}.` : "",
+    f.missing.length ? `They do not have: ${f.missing.join("; ")}.` : "",
+    `Build the recipe from these foods. Use at most ${MAX_NEW_INGREDIENTS} ingredients that are not listed (water, salt and pepper do not count), and only where the dish needs them.`,
+  ].filter(Boolean);
 }
 
 /** Only the context the task needs (SPEC.md): prefs, targets, the parent. */
@@ -54,6 +73,7 @@ function userMessage(ctx: DraftContext): string {
       ? `Spice level: ${["none", "mild", "medium", "hot"][p.spiceLevel]}.`
       : null,
     p.notes ? `Notes from them: ${p.notes}` : null,
+    ...familiarLines(ctx),
   ];
   let text = lines.filter(Boolean).join("\n");
   if (ctx.parent) {
@@ -116,13 +136,18 @@ export async function draftContext(
     servings: number;
     target?: Partial<Macros> | undefined;
     date: string;
+    /** Build from the foods they already eat (the default). */
+    fromMyFoods?: boolean;
+    /** Ingredients they said they do not have. */
+    missing?: string[];
   },
 ): Promise<DraftContext> {
-  const [prefs, summary] = await Promise.all([
+  const [prefs, summary, foods] = await Promise.all([
     getPreferences(userId),
     options.target || !options.slot
       ? null
       : getDaySummary(userId, options.date),
+    options.fromMyFoods === false ? null : knownFoods(userId),
   ]);
   const budget =
     summary && options.slot
@@ -146,5 +171,15 @@ export async function draftContext(
       spiceLevel: prefs.spiceLevel,
       notes: prefs.notes,
     },
+    // Too little history and every ingredient would count as new.
+    familiar:
+      foods && foods.known.enough
+        ? {
+            foods: loggedLabels(foods.logged),
+            pantry: foods.pantry,
+            known: foods.known,
+            missing: options.missing ?? [],
+          }
+        : undefined,
   };
 }
