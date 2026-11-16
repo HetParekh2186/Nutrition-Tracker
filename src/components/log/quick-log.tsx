@@ -85,6 +85,11 @@ function FoodRow({ hit }: { hit: FoodHit }) {
         </Badge>
         <ScoreBadge score={hit.score} className="ml-auto" />
       </div>
+      {hit.fullName ? (
+        <span className="truncate text-xs text-ink-muted" title={hit.fullName}>
+          {hit.fullName}
+        </span>
+      ) : null}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="text-xs text-ink-muted">{preview.label}</span>
         <MacroLine macros={preview.macros} />
@@ -192,8 +197,14 @@ function SearchStep({
             {q
               ? isFetching || showingStale
                 ? "Searching"
-                : `No foods match "${q}".`
+                : `No foods match "${q}". Try a shorter or more general word, like "rice" or "cheese".`
               : "Foods you log will show up here."}
+          </p>
+        ) : null}
+        {q && !showingStale && data?.corrected ? (
+          <p role="status" className="px-3 pt-2 text-xs text-ink-muted">
+            Showing results for{" "}
+            <span className="font-medium text-ink">{data.corrected}</span>
           </p>
         ) : null}
         {meals.length ? (
@@ -389,6 +400,9 @@ function AmountStep({
         </Button>
         <div className="min-w-0">
           <p className="font-display text-lg leading-snug">{hit.name}</p>
+          {hit.fullName ? (
+            <p className="text-xs text-ink-muted">{hit.fullName}</p>
+          ) : null}
           <p className="text-xs text-ink-muted">
             {SOURCE_LABEL[hit.source]}
             {hit.brand ? ` · ${hit.brand}` : ""}
