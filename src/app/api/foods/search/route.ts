@@ -7,7 +7,7 @@ import {
   searchParamsObject,
 } from "@/lib/api/http";
 import { FoodSearchQuery } from "@/lib/api/schemas";
-import { searchFoods, usedFoods } from "@/lib/foods/repo";
+import { searchFoodsPlanned, usedFoods } from "@/lib/foods/repo";
 import type { FoodSearchResult } from "@/lib/foods/types";
 
 export const GET = route(async (request: Request) => {
@@ -16,9 +16,11 @@ export const GET = route(async (request: Request) => {
   const query = q.trim();
 
   if (query) {
+    const { hits, corrected } = await searchFoodsPlanned(userId, query, limit);
     const body: FoodSearchResult = {
       query,
-      results: await searchFoods(userId, query, limit),
+      corrected,
+      results: hits,
       recent: [],
       frequent: [],
     };

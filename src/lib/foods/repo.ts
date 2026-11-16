@@ -10,7 +10,7 @@ import { withEstimatedEnergy, type NutrientMap } from "@/lib/nutrition/math";
 import { miseScore, type FoodQuality } from "@/lib/nutrition/mise-score";
 
 import type { OffFood } from "./off";
-import { prefixTsQuery } from "./query";
+import { planQuery, vocabulary, type Vocabulary } from "./query";
 import type { FoodDetail, FoodHit, MyFoodDTO, MyFoodsSort } from "./types";
 
 // Macros for the preview, plus what the Mise score needs.
@@ -40,6 +40,7 @@ const qualityOf = (row: QualityRow): FoodQuality => ({
 type HitRow = QualityRow & {
   id: string | number;
   name: string;
+  full_name?: string | null;
   brand: string | null;
   source: FoodHit["source"];
   nutrients: Record<string, number> | null;
@@ -61,6 +62,9 @@ function toHit(row: HitRow): FoodHit {
   return {
     id: Number(row.id),
     name: row.name,
+    ...(row.full_name && row.full_name !== row.name
+      ? { fullName: row.full_name }
+      : {}),
     brand: row.brand,
     source: row.source,
     per100g,
@@ -90,7 +94,8 @@ function toHit(row: HitRow): FoodHit {
 
 // Shared tail of the hit queries: preview macros, first portion, last use.
 const hitColumns = sql`
-  f.id, f.name, f.brand, f.source,
+  f.id, coalesce(f.common_name, f.name) as name, f.name as full_name,
+  f.brand, f.source,
   f.nutriscore_points, f.additives, f.organic,
   (select jsonb_object_agg(fn.nutrient_id, fn.amount_per_100g)
      from food_nutrients fn
@@ -112,19 +117,59 @@ const hitJoins = (userId: string) => sql`
   ) last on true
 `;
 
+// Words in food names, for correcting typos. Food names change only on
+// import, so an hour-old copy per server is fine.
+const VOCAB_TTL_MS = 60 * 60_000;
+let vocabCache: { at: number; vocab: Promise<Vocabulary> } | null = null;
+
+export function foodVocabulary(): Promise<Vocabulary> {
+  if (vocabCache && Date.now() - vocabCache.at < VOCAB_TTL_MS) {
+    return vocabCache.vocab;
+  }
+  const vocab = getDb()
+    .execute<{ word: string; nentry: number }>(
+      sql`select word, nentry from ts_stat($$
+            select to_tsvector('simple', coalesce(common_name, '') || ' ' || name)
+              from foods where owner_id is null$$)
+           where word ~ '^[a-z]{3,}$'`,
+    )
+    .then((rows) =>
+      vocabulary(rows.map((r) => ({ word: r.word, count: Number(r.nentry) }))),
+    );
+  vocabCache = { at: Date.now(), vocab };
+  // A failed load is retried on the next search rather than cached.
+  vocab.catch(() => (vocabCache = null));
+  return vocab;
+}
+
+function escapeRegex(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+export type FoodSearch = {
+  hits: FoodHit[];
+  /** The query with typos fixed, when any were; else null. */
+  corrected: string | null;
+};
+
 /**
- * Fuzzy search: prefix full-text match or trigram word similarity, ranked
- * by text relevance, with foods you have logged before ranked first.
+ * Forgiving search: misspellings are corrected and everyday words mapped
+ * to USDA's, then foods match by prefix full text or trigram similarity.
+ * Whole-word matches on the everyday name rank first, then foods you log;
+ * restaurant items sink unless asked for, and exact duplicates collapse.
  */
-export async function searchFoods(
+export async function searchFoodsPlanned(
   userId: string,
   text: string,
   limit: number,
-): Promise<FoodHit[]> {
-  const tsq = prefixTsQuery(text);
-  if (!tsq) return [];
-  const q = text.trim().toLowerCase();
-  const first = q.split(/\s+/)[0] ?? q;
+): Promise<FoodSearch> {
+  const plan = planQuery(text, await foodVocabulary().catch(() => undefined));
+  if (!plan) return { hits: [], corrected: null };
+  const q = plan.text;
+  // The first word, or a synonym of it, starting the name ranks first.
+  const lead = `(${plan.lead.map(escapeRegex).join("|")})(s|es)?`;
+  const display = sql`coalesce(f.common_name, f.name)`;
+  const sim = sql`greatest(word_similarity(${q}, ${display}), word_similarity(${q}, f.name))`;
 
   const rows = await getDb().execute<HitRow & { score: number }>(sql`
     with uses as (
@@ -135,37 +180,74 @@ export async function searchFoods(
     ),
     matches as (
       select f.id,
-             0.5 * ts_rank_cd(f.search_tsv, to_tsquery('english', ${tsq}))
-             + word_similarity(${q}, f.name)
-             + case when lower(f.name) like ${`${first}%`} then 0.3 else 0 end
+             lower(${display}) as same_food,
+             f.source,
+             length(f.name) as full_length,
+             f.search_tsv @@ tq.q as full_text,
+             ${sim} as sim,
+             0.5 * ts_rank_cd(f.search_tsv, tq.q)
+             + ${sim}
+             + case when f.search_tsv @@ tq.q then 0.4 else 0 end
+             + case when ${display} ~* ${`^${lead}\\M`} then 0.35
+                    when ${display} ~* ${`\\m${lead}\\M`} then 0.15
+                    else 0 end
              + case when f.owner_id is not null then 0.2 else 0 end
+             -- Restaurant and brand items sink, unless the query names
+             -- the brand in full ("burger king").
+             - case when (f.name ~ '^[A-Z][A-Z''&.]{2,}' or f.name ~* '^fast foods?,')
+                     and not (${q} like '% %' and lower(f.name) like ${`${q}%`})
+                    then 0.45 else 0 end
              -- Dried and powdered forms are rarely what a short query means.
              - case when f.name ~* '\\m(dried|dehydrated|powder|powdered|mix)\\M'
                      and ${q} !~* '(dried|dehydrated|powder|mix)' then 0.25 else 0 end
-             - length(f.name) * 0.006 as text_score,
-             word_similarity(${q}, f.name) as sim,
-             f.search_tsv @@ to_tsquery('english', ${tsq}) as full_text
-        from foods f
+             - length(${display}) * 0.006 as text_score
+        from foods f, to_tsquery('english', ${plan.tsquery}) as tq(q)
        where (f.owner_id is null or f.owner_id = ${userId})
-         and (f.search_tsv @@ to_tsquery('english', ${tsq})
-              or ${q} <% f.name)
+         and (f.search_tsv @@ tq.q
+              or ${q} <% f.name
+              or ${q} <% f.common_name)
        order by text_score desc
-       limit 200
+       limit 300
+    ),
+    ranked as (
+      select m.*,
+             u.uses,
+             -- Foods you log rank first, but a near miss ("bread" for
+             -- "breast") is not lifted over real matches.
+             m.text_score + case when u.uses is null then 0
+                                 when not m.full_text then 0.1
+                                 else 1 + least(u.uses, 20) * 0.05 end as score,
+             -- Variants that read the same collapse to one: the one you log,
+             -- else Foundation data, else the plainest.
+             row_number() over (partition by m.same_food
+                                order by u.uses desc nulls last,
+                                         m.text_score desc,
+                                         (m.source = 'usda_foundation') desc,
+                                         m.full_length) as copy
+        from matches m
+        left join uses u on u.food_id = m.id
     )
     select ${hitColumns},
-           u.uses,
-           m.sim,
-           m.full_text,
-           m.text_score + case when u.uses is null then 0
-                               else 1 + least(u.uses, 20) * 0.05 end as score
-      from matches m
-      join foods f on f.id = m.id
-      left join uses u on u.food_id = f.id
+           r.uses,
+           r.sim,
+           r.full_text,
+           r.score
+      from ranked r
+      join foods f on f.id = r.id
       ${hitJoins(userId)}
-     order by score desc
+     where r.copy = 1
+     order by r.score desc
      limit ${limit}
   `);
-  return rows.map(toHit);
+  return { hits: rows.map(toHit), corrected: plan.corrected };
+}
+
+export async function searchFoods(
+  userId: string,
+  text: string,
+  limit: number,
+): Promise<FoodHit[]> {
+  return (await searchFoodsPlanned(userId, text, limit)).hits;
 }
 
 /** Foods the user logged most recently, or most often. */
@@ -210,7 +292,7 @@ export async function myFoods(
   const q = options.query?.trim();
   const orderBy =
     options.sort === "name"
-      ? sql`lower(f.name) asc`
+      ? sql`lower(coalesce(f.common_name, f.name)) asc`
       : options.sort === "frequent"
         ? sql`coalesce(u.uses, 0) desc, coalesce(u.last_used, f.created_at) desc`
         : sql`coalesce(u.last_used, f.created_at) desc`;
@@ -235,7 +317,7 @@ export async function myFoods(
       ${hitJoins(userId)}
      where (f.owner_id is null or f.owner_id = ${userId})
        ${options.customOnly ? sql`and f.owner_id = ${userId}` : sql``}
-       ${q ? sql`and (f.name ilike ${`%${q}%`} or f.brand ilike ${`%${q}%`})` : sql``}
+       ${q ? sql`and (f.name ilike ${`%${q}%`} or f.common_name ilike ${`%${q}%`} or f.brand ilike ${`%${q}%`})` : sql``}
      order by ${orderBy}
      limit 500
   `);
@@ -295,7 +377,8 @@ export async function getFood(
   const nutrients = nutrientMaps.get(food.id);
   return {
     id: food.id,
-    name: food.name,
+    name: food.commonName ?? food.name,
+    ...(food.commonName ? { fullName: food.name } : {}),
     brand: food.brand,
     source: food.source,
     // Custom barcodes are stored with the owner in front; show the code.

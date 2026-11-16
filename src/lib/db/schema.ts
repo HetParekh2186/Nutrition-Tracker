@@ -247,10 +247,13 @@ export const foods = pgTable(
     source: text({ enum: FOOD_SOURCES }).notNull(),
     sourceId: text(), // FDC id or barcode
     name: text().notNull(),
+    // The everyday name shown in lists ("Olive oil" for "Oil, olive, salad
+    // or cooking"); null when the name is already plain. See foods/names.ts.
+    commonName: text(),
     brand: text(),
     ownerId: uuid().references(() => users.id, { onDelete: "cascade" }), // custom foods only
     searchTsv: tsvector().generatedAlwaysAs(
-      sql`to_tsvector('english', coalesce(name,'') || ' ' || coalesce(brand,''))`,
+      sql`to_tsvector('english', coalesce(common_name,'') || ' ' || coalesce(name,'') || ' ' || coalesce(brand,''))`,
     ),
     embedding: vector({ dimensions: EMBEDDING_DIMENSIONS }),
     // Mise score inputs from Open Food Facts; null is unknown.
@@ -266,6 +269,10 @@ export const foods = pgTable(
       sql`${t.source} in ('usda_foundation','usda_sr_legacy','usda_branded','off','custom')`,
     ),
     index("foods_name_trgm").using("gin", t.name.op("gin_trgm_ops")),
+    index("foods_common_name_trgm").using(
+      "gin",
+      t.commonName.op("gin_trgm_ops"),
+    ),
     index("foods_tsv").using("gin", t.searchTsv),
     index("foods_owner").on(t.ownerId),
     pgPolicy("foods_read", {

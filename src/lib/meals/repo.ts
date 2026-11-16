@@ -1,7 +1,17 @@
 // Saved meals: named groups of foods and recipes the user logs together.
 // Every function takes the user id and filters by it (see diary/repo.ts).
 
-import { and, asc, desc, eq, ilike, inArray, isNull, or } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  isNull,
+  or,
+  sql,
+} from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
 import {
@@ -38,7 +48,7 @@ async function hydrate(
   const items = await getDb()
     .select({
       item: mealItems,
-      foodName: foods.name,
+      foodName: sql<string>`coalesce(${foods.commonName}, ${foods.name})`,
       foodBrand: foods.brand,
       recipeTitle: recipes.title,
     })

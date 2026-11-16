@@ -10,6 +10,7 @@ import { join } from "node:path";
 
 import { parse } from "csv-parse";
 
+import { commonName } from "../src/lib/foods/names";
 import { IMPORT_FALLBACKS, NUTRIENTS } from "../src/lib/nutrition/catalog";
 
 import { chunk, scriptSql } from "./lib/db";
@@ -97,6 +98,12 @@ async function confirmNutrientIds(dir: string): Promise<void> {
   }
 }
 
+/** The everyday name, or null when it is the same as the USDA one. */
+function plainName(name: string, source: string): string | null {
+  const plain = commonName(name, source);
+  return plain === name ? null : plain;
+}
+
 async function importDataset(sql: ReturnType<typeof scriptSql>, ds: Dataset) {
   const dir = await ensureDataset(ds.folder);
   await confirmNutrientIds(dir);
@@ -114,10 +121,12 @@ async function importDataset(sql: ReturnType<typeof scriptSql>, ds: Dataset) {
       source: ds.source,
       source_id: sourceId,
       name,
+      common_name: plainName(name, ds.source),
     }));
     const inserted = await sql<{ id: number; source_id: string }[]>`
       insert into foods ${sql(rows)}
-      on conflict (source, source_id) do update set name = excluded.name
+      on conflict (source, source_id) do update
+        set name = excluded.name, common_name = excluded.common_name
       returning id, source_id
     `;
     for (const r of inserted) foodIds.set(r.source_id, Number(r.id));

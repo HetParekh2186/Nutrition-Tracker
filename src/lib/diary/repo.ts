@@ -71,7 +71,7 @@ export async function loadEntries(
   const rows = await getDb()
     .select({
       entry: diaryEntries,
-      foodName: foods.name,
+      foodName: sql<string>`coalesce(${foods.commonName}, ${foods.name})`,
       foodBrand: foods.brand,
       recipeTitle: recipes.title,
     })

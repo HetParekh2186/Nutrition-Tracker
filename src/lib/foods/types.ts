@@ -6,7 +6,10 @@ import type { MiseScore } from "@/lib/nutrition/mise-score";
 
 export type FoodHit = {
   id: number;
+  /** The everyday name ("Olive oil"). */
   name: string;
+  /** The full source name, when it differs ("Oil, olive, salad or cooking"). */
+  fullName?: string;
   brand: string | null;
   source: FoodSource;
   /** Per 100 g; missing values are unknown. */
@@ -26,6 +29,7 @@ export type FoodPortion = { id: number; label: string; grams: number };
 export type FoodDetail = {
   id: number;
   name: string;
+  fullName?: string;
   brand: string | null;
   source: FoodSource;
   sourceId: string | null;
@@ -38,6 +42,8 @@ export type FoodDetail = {
 
 export type FoodSearchResult = {
   query: string;
+  /** The query with typos fixed, when the results are for that instead. */
+  corrected?: string | null;
   results: FoodHit[];
   /** Filled when the query is empty: what you log most and most recently. */
   recent: FoodHit[];

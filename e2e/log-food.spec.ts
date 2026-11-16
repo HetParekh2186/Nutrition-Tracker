@@ -24,9 +24,7 @@ test("log a food from search, then delete it", async ({ page, isMobile }) => {
   await expect(page.getByText("100 g", { exact: true })).toBeVisible();
   await amount.press("Enter");
 
-  const entry = slot
-    .getByRole("button", { name: /Egg, whole, raw, fresh/ })
-    .last();
+  const entry = slot.getByRole("button", { name: /^Egg, whole, raw/ }).last();
   await expect(entry).toBeVisible();
   await expect(slot.getByRole("listitem")).toHaveCount(before + 1);
   await expect(entry).toBeEnabled();
@@ -164,4 +162,32 @@ test("an unknown barcode offers a custom food that keeps the code", async ({
 
   await expect(dialog.getByText("Trail mix", { exact: true })).toBeVisible();
   expect(posted).toMatchObject({ name: "Trail mix", barcode: code });
+});
+
+test("search forgives typos and shows everyday names", async ({
+  page,
+  isMobile,
+}) => {
+  await signInAsDemo(page);
+  await openQuickLog(page, isMobile);
+  const search = page.getByPlaceholder(/Search foods/);
+
+  await search.fill("chiken brest");
+  await expect(page.getByText("Showing results for")).toContainText(
+    "chicken breast",
+  );
+  // The everyday name leads; the full USDA name sits under it.
+  const option = page
+    .getByRole("option", { name: /^Chicken breast, cooked, roasted/ })
+    .first();
+  await expect(option).toBeVisible();
+  await expect(option).toContainText(
+    "Chicken, broilers or fryers, breast, meat only, cooked, roasted",
+  );
+
+  // Regional words map to USDA's.
+  await search.fill("dal");
+  await expect(
+    page.getByRole("option", { name: /^Lentils/ }).first(),
+  ).toBeVisible();
 });
