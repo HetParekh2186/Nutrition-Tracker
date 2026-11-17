@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { commonName } from "./names";
+import { commonName, everydayFood } from "./names";
 
 const usda = (name: string) => commonName(name, "usda_sr_legacy");
 
@@ -54,7 +54,7 @@ describe("commonName", () => {
   });
 
   it("softens all-caps brands", () => {
-    expect(usda("APPLEBEE'S, chili")).toBe("Applebee's, chili");
+    expect(usda("DIGIORNO Pizza, cheese")).toBe("Digiorno Pizza, cheese");
   });
 
   it("leaves product names from other sources alone", () => {
@@ -62,5 +62,60 @@ describe("commonName", () => {
     expect(commonName("Trail mix, MY BLEND", "custom")).toBe(
       "Trail mix, MY BLEND",
     );
+  });
+});
+
+describe("everydayFood", () => {
+  const sr = (name: string) => everydayFood(name, "usda_sr_legacy");
+  const survey = (name: string) => everydayFood(name, "usda_survey");
+
+  it("moves a chain into the brand", () => {
+    expect(sr("McDONALD'S, FILET-O-FISH")).toEqual({
+      name: "Filet-O-Fish",
+      brand: "McDonald's",
+    });
+    expect(sr("KFC, Popcorn Chicken")).toEqual({
+      name: "Popcorn Chicken",
+      brand: "KFC",
+    });
+    expect(survey("Big Mac (McDonalds)")).toEqual({
+      name: "Big Mac",
+      brand: "McDonald's",
+    });
+    expect(sr('PIZZA HUT 14" Cheese Pizza, Pan Crust')).toEqual({
+      name: 'Cheese Pizza, 14", pan crust',
+      brand: "Pizza Hut",
+    });
+  });
+
+  it("names the kind of restaurant", () => {
+    expect(sr("Restaurant, Chinese, orange chicken")).toEqual({
+      name: "Orange chicken",
+      brand: "Chinese restaurant",
+    });
+    expect(sr("Fast foods, hamburger; single, regular patty; plain")).toEqual({
+      name: "Hamburger, single, regular patty, plain",
+      brand: "Fast food",
+    });
+    expect(survey("Hamburger, from fast food, 1 large patty")).toEqual({
+      name: "Hamburger, 1 large patty",
+      brand: "Fast food",
+    });
+    expect(survey("Potato, hash brown, from restaurant")).toEqual({
+      name: "Potato, hash brown",
+      brand: "Restaurant",
+    });
+    expect(survey("Baked beans from fast food / restaurant")).toEqual({
+      name: "Baked beans",
+      brand: "Fast food",
+    });
+  });
+
+  it("drops not further specified", () => {
+    expect(survey("Burrito, NFS")).toEqual({ name: "Burrito", brand: null });
+  });
+
+  it("leaves everyday foods without a brand", () => {
+    expect(sr("Nuts, almonds")).toEqual({ name: "Almonds", brand: null });
   });
 });

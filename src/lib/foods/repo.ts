@@ -129,7 +129,8 @@ export function foodVocabulary(): Promise<Vocabulary> {
   const vocab = getDb()
     .execute<{ word: string; nentry: number }>(
       sql`select word, nentry from ts_stat($$
-            select to_tsvector('simple', coalesce(common_name, '') || ' ' || name)
+            select to_tsvector('simple', coalesce(common_name, '') || ' ' || name
+                                         || ' ' || coalesce(brand, ''))
               from foods where owner_id is null$$)
            where word ~ '^[a-z]{3,}$'`,
     )
@@ -170,6 +171,14 @@ export async function searchFoodsPlanned(
   const lead = `(${plan.lead.map(escapeRegex).join("|")})(s|es)?`;
   const display = sql`coalesce(f.common_name, f.name)`;
   const sim = sql`greatest(word_similarity(${q}, ${display}), word_similarity(${q}, f.name))`;
+  // Where a restaurant item comes from: its brand, or the all-caps head of
+  // an older USDA name ("DIGIORNO Pizza, ...").
+  const place = sql`coalesce(f.brand, split_part(f.name, ',', 1))`;
+  // The query names the place when it holds every word of it: "kfc",
+  // "pizza hut", but not "burger" for Burger King or "pizza" for Pizza Hut.
+  const named = plan.terms.join(" ");
+  const namesPlace = sql`(to_tsvector('english', ${named})
+    @@ plainto_tsquery('english', replace(${place}, '-', ' ')))`;
 
   const rows = await getDb().execute<HitRow & { score: number }>(sql`
     with uses as (
@@ -180,7 +189,7 @@ export async function searchFoodsPlanned(
     ),
     matches as (
       select f.id,
-             lower(${display}) as same_food,
+             lower(${display} || ' ' || coalesce(f.brand, '')) as same_food,
              f.source,
              length(f.name) as full_length,
              f.search_tsv @@ tq.q as full_text,
@@ -192,11 +201,14 @@ export async function searchFoodsPlanned(
                     when ${display} ~* ${`\\m${lead}\\M`} then 0.15
                     else 0 end
              + case when f.owner_id is not null then 0.2 else 0 end
-             -- Restaurant and brand items sink, unless the query names
-             -- the brand in full ("burger king").
-             - case when (f.name ~ '^[A-Z][A-Z''&.]{2,}' or f.name ~* '^fast foods?,')
-                     and not (${q} like '% %' and lower(f.name) like ${`${q}%`})
-                    then 0.45 else 0 end
+             -- Chain and brand items sink below everyday foods, and generic
+             -- fast food a little, unless the query names the place.
+             - case when ${namesPlace} then 0
+                    when f.brand in ('Fast food', 'Restaurant', 'Pizza chain')
+                      or f.brand like '% restaurant' then 0.2
+                    when (f.brand is not null and f.source like 'usda%')
+                      or f.name ~ '^[A-Z][A-Z''&.]{2,}' then 0.45
+                    else 0 end
              -- Dried and powdered forms are rarely what a short query means.
              - case when f.name ~* '\\m(dried|dehydrated|powder|powdered|mix)\\M'
                      and ${q} !~* '(dried|dehydrated|powder|mix)' then 0.25 else 0 end

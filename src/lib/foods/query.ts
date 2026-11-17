@@ -48,6 +48,16 @@ export const SYNONYMS: Record<string, string[]> = {
   veggie: ["vegetable"],
   veggies: ["vegetables"],
   bbq: ["barbecue"],
+  burger: ["hamburger"],
+  burgers: ["hamburger"],
+  // Restaurant chains, as people say them.
+  mcdonalds: ["mcdonald"],
+  mcd: ["mcdonald"],
+  mcds: ["mcdonald"],
+  maccas: ["mcdonald"],
+  bk: ["burger king"],
+  chickfila: ["chick fil a"],
+  tgif: ["fridays"],
   pb: ["peanut butter"],
   oj: ["orange juice"],
   evoo: ["olive oil"],
@@ -144,6 +154,8 @@ export type QueryPlan = {
   corrected: string | null;
   /** The first word and its synonyms' first words, for ranking. */
   lead: string[];
+  /** Every word searched for, synonyms included, for matching brands. */
+  terms: string[];
 };
 
 const prefix = (phrase: string) => {
@@ -180,6 +192,11 @@ export function planQuery(text: string, vocab?: Vocabulary): QueryPlan | null {
     lead: [
       ...new Set(
         [fixed[0]!, ...(SYNONYMS[fixed[0]!] ?? [])].map((a) => tokens(a)[0]!),
+      ),
+    ],
+    terms: [
+      ...new Set(
+        fixed.flatMap((w) => [w, ...(SYNONYMS[w] ?? [])].flatMap(tokens)),
       ),
     ],
   };

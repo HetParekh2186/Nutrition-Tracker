@@ -191,3 +191,32 @@ test("search forgives typos and shows everyday names", async ({
     page.getByRole("option", { name: /^Lentils/ }).first(),
   ).toBeVisible();
 });
+
+test("finds fast food and restaurant items by chain", async ({
+  page,
+  isMobile,
+}) => {
+  await signInAsDemo(page);
+  await openQuickLog(page, isMobile);
+  const search = page.getByPlaceholder(/Search foods/);
+
+  // The dish is the name; the chain shows beside it.
+  await search.fill("big mac");
+  const bigMac = page.getByRole("option", { name: /^Big Mac/ }).first();
+  await expect(bigMac).toBeVisible();
+  await expect(bigMac).toContainText("McDonald's");
+
+  // Naming the chain lists its menu.
+  await search.fill("kfc");
+  await expect(page.getByRole("option", { name: /KFC/ }).first()).toBeVisible();
+
+  // Restaurant dishes and USDA survey foods are searchable too.
+  await search.fill("orange chicken");
+  await expect(
+    page.getByRole("option", { name: /Chinese restaurant/ }).first(),
+  ).toBeVisible();
+  await search.fill("paneer");
+  await expect(
+    page.getByRole("option", { name: /^Paneer/ }).first(),
+  ).toBeVisible();
+});

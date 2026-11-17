@@ -29,6 +29,7 @@ const SORTS: { value: MyFoodsSort; label: string }[] = [
 const SOURCE: Record<MyFoodDTO["source"], string> = {
   usda_foundation: "USDA",
   usda_sr_legacy: "USDA",
+  usda_survey: "USDA",
   usda_branded: "USDA",
   off: "OFF",
   custom: "Custom",
