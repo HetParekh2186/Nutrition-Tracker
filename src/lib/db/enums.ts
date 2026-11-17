@@ -59,6 +59,7 @@ export const NUTRIENT_CATEGORIES = [
 export const FOOD_SOURCES = [
   "usda_foundation",
   "usda_sr_legacy",
+  "usda_survey",
   "usda_branded",
   "off",
   "custom",

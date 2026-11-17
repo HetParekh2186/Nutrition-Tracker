@@ -266,7 +266,7 @@ export const foods = pgTable(
     unique().on(t.source, t.sourceId),
     check(
       "foods_source",
-      sql`${t.source} in ('usda_foundation','usda_sr_legacy','usda_branded','off','custom')`,
+      sql`${t.source} in ('usda_foundation','usda_sr_legacy','usda_survey','usda_branded','off','custom')`,
     ),
     index("foods_name_trgm").using("gin", t.name.op("gin_trgm_ops")),
     index("foods_common_name_trgm").using(

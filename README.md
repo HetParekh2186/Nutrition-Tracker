@@ -31,7 +31,7 @@ One number is fixed by design: every nutrient value on screen traces to USDA Foo
 
 ![Today, with the calorie ring, macro totals and remaining budget](docs/media/today.png)
 
-**Quick Log.** Press Ctrl+K (or Log in the middle of the tab bar on a phone) to search more than 8,000 USDA foods. Search forgives the way people type: misspellings are corrected ("chiken brest" shows chicken breast, with a note saying so), everyday and regional words map to USDA's ("yoghurt", "dal", "aubergine", "pb"), whole-word matches come first, restaurant items sink unless you name the restaurant, and foods listed twice show once. Foods have everyday names ("Chicken breast, cooked, roasted" instead of "Chicken, broilers or fryers, breast, meat only, cooked, roasted"), with the full USDA name in small type under each result. Results rank foods you log often first, and portions come from USDA ("1 large egg", "1 cup, chopped"). On a phone, the barcode button opens the camera and scans the product (or tap the digits box to type them, which closes the camera); Open Food Facts fills in the nutrition. If a product is not listed, one tap turns it into a custom food that keeps the barcode, so the next scan finds it.
+**Quick Log.** Press Ctrl+K (or Log in the middle of the tab bar on a phone) to search more than 13,000 USDA foods, including fast food and restaurant meals. Search forgives the way people type: misspellings are corrected ("chiken brest" shows chicken breast, with a note saying so), everyday and regional words map to USDA's ("yoghurt", "dal", "aubergine", "pb"), whole-word matches come first, and foods listed twice show once. Chain items show the dish as the name and the chain beside it ("Big Mac", McDonald's), so you can search by dish ("whopper", "orange chicken") or by chain ("kfc", "taco bell", "mcdonalds", "bk"). Chain items stay below everyday foods unless you name the chain, so "burger" shows hamburgers before Burger King. Mixed dishes such as biryani, pad thai and palak paneer come from USDA's survey database. Foods have everyday names ("Chicken breast, cooked, roasted" instead of "Chicken, broilers or fryers, breast, meat only, cooked, roasted"), with the full USDA name in small type under each result. Results rank foods you log often first, and portions come from USDA ("1 large egg", "1 cup, chopped"). On a phone, the barcode button opens the camera and scans the product (or tap the digits box to type them, which closes the camera); Open Food Facts fills in the nutrition. If a product is not listed, one tap turns it into a custom food that keeps the barcode, so the next scan finds it.
 
 **Mise score.** Every food in search, My foods and the amount step shows a score from 0 to 100 (Excellent, Good, Poor or Bad), with a breakdown one tap away. Nutrition counts for 60 points, using Nutri-Score; additives of concern for 30, with a high-risk one such as a nitrite capping the score at 49; and an organic label for 10. Additives and labels come from Open Food Facts, so USDA and custom foods are scored on nutrition alone, and the breakdown says so.
 
@@ -87,12 +87,12 @@ The browser and the nightly cron both call the same Next.js route handlers, whic
 
 - **Macros are recomputed on the server, never trusted from the LLM.** When Claude drafts a recipe it names each ingredient and its weight in grams. The server matches every ingredient to a USDA food and computes the nutrition itself. If the result misses the target, Claude gets one revision with the real numbers. A model can describe food well and still be confidently wrong about the protein in it.
 - **Ranking is a transparent formula, not an LLM.** Suggestions come from SQL filters, a weighted score and a diversity pass. It is fast, free to run, unit-tested, and every card can say exactly why it ranked where it did.
-- **USDA data is imported, not called live.** Foundation and SR Legacy foods load once into Postgres, with trigram and full-text indexes. Search is a local query instead of a network call, recipe nutrition can join food data, and the app does not depend on a third-party API being up.
+- **USDA data is imported, not called live.** Foundation, SR Legacy and survey (FNDDS) foods load once into Postgres, with trigram and full-text indexes. Search is a local query instead of a network call, recipe nutrition can join food data, and the app does not depend on a third-party API being up.
 - **Hard rules stay hard.** Diet, allergies and excluded ingredients filter candidates before scoring. Exclusions expand to whole families, so "shellfish" also removes shrimp and prawns.
 - **Diets are sets, not labels.** A diet is the set of animal foods you eat (beef, pork, lamb, chicken, other poultry, fish, shellfish, eggs, dairy, honey). Presets fill the set in one click, and anything between them works: a vegetarian who eats chicken and eggs is just that set. Ingredients are read for hidden animal foods too, so fish sauce counts as fish, gelatin as beef and pork, and pesto as dairy. Generated recipes and Cook Mode swaps are checked against the same rule.
 - **Row-level security on every table.** Each user's data is isolated in Postgres itself, not just in application code.
 - **The Mise score is computed, not licensed.** Yuka has no public API, so Mise scores foods itself with the same idea: 60% Nutri-Score, 30% additives, 10% organic. Nutri-Score points come from Open Food Facts when it has them, else from the stored nutrients per 100 g, mapped to 0 to 100 linearly between the grade boundaries so near-identical foods never land far apart. A food missing sodium, or sugars or saturated fat it could plausibly contain, gets no score rather than a flattering guess. Category rules (drinks, cheese, added fats) and fruit and vegetable content are only applied when Open Food Facts supplies the points, so USDA cheeses score lower than their official grade.
-- **Search corrects against real food words.** Misspelled words are matched to the words that actually appear in food names, by edit distance, so a correction always finds something. Short words are left alone because too many real words sit one letter apart, and a word that starts a real word is never changed. Everyday names are generated by rules, not by hand, and never drop raw or cooked.
+- **Search corrects against real food words.** Misspelled words are matched to the words that actually appear in food names, by edit distance, so a correction always finds something. Short words are left alone because too many real words sit one letter apart, and a word that starts a real word is never changed. Everyday names are generated by rules, not by hand, and never drop raw or cooked. The same rules move a restaurant chain or "from fast food" out of the name and into the brand.
 - **Counts stay honest.** Missing nutrient values are shown as unknown, not zero, and each total says how many foods had data.
 
 ## How recommendations work
@@ -144,7 +144,7 @@ The top 30 are then reordered with Maximal Marginal Relevance (λ = 0.7) so the 
 - **UI:** Tailwind CSS 4 with design tokens, shadcn/ui on Radix, Motion, TanStack Query, cmdk, Vaul, Recharts
 - **Data:** Supabase (Postgres 17, Auth with email and password or magic links, row-level security), Drizzle ORM, pgvector, pg_trgm
 - **AI:** Claude through the Anthropic SDK (structured outputs validated with Zod, streaming tool use in Cook Mode), Voyage AI embeddings
-- **Food data:** USDA FoodData Central (Foundation and SR Legacy), Open Food Facts for barcodes
+- **Food data:** USDA FoodData Central (Foundation, SR Legacy and FNDDS survey foods), Open Food Facts for barcodes
 - **Quality:** Vitest, Playwright, axe-core, ESLint, Prettier, Husky, commitlint, GitHub Actions
 
 ## Running locally
@@ -155,10 +155,10 @@ You need Node 22+, pnpm and a Supabase project.
 pnpm install
 cp .env.example .env.local    # fill in the values below
 pnpm db:migrate               # schema, row-level security, extensions
-pnpm import:usda              # downloads and loads USDA foods (a few minutes)
+pnpm import:usda              # downloads and loads USDA foods (a few minutes); add usda_survey to load one dataset
 pnpm seed:recipes             # starter recipes
 pnpm retag:diets              # recompute recipe diet tags after rule changes
-pnpm name:foods               # refresh everyday food names after rule changes
+pnpm name:foods               # refresh everyday food names and chain brands after rule changes
 pnpm demo:user && pnpm seed:demo   # optional: the demo account and its history
 pnpm dev
 ```
@@ -186,9 +186,9 @@ pnpm test:coverage    # with coverage for lib/nutrition and lib/recommend
 pnpm test:e2e         # Playwright, desktop and a Pixel 7 viewport
 ```
 
-- **Unit:** every function in `lib/nutrition` and `lib/recommend`, using the worked examples above as fixtures, with coverage held at 90% of lines. Unit conversion, barcode parsing, the Mise score (Nutri-Score points checked against Nutella's published grade), substitutions, everyday food names, search typo correction and synonyms, matching recipe ingredients to the foods you log, and the Cook Mode tools are tested too.
+- **Unit:** every function in `lib/nutrition` and `lib/recommend`, using the worked examples above as fixtures, with coverage held at 90% of lines. Unit conversion, barcode parsing, the Mise score (Nutri-Score points checked against Nutella's published grade), substitutions, everyday food names and restaurant brands, search typo correction and synonyms, matching recipe ingredients to the foods you log, and the Cook Mode tools are tested too.
 - **LLM contracts:** recorded Claude responses checked against the Zod schemas, so tests never call the API.
-- **End to end:** both key flows (plain-English logging, and suggest, cook and log), plus search (including typos and regional words), editing a logged entry, phone navigation, recipes, onboarding, barcode lookup (typed and scanned from a fake camera feed) creating a food from an unknown barcode, asking about new ingredients in a recipe, and the Mise score on search results and scanned products, on desktop and mobile.
+- **End to end:** both key flows (plain-English logging, and suggest, cook and log), plus search (including typos, regional words and restaurant chains), editing a logged entry, phone navigation, recipes, onboarding, barcode lookup (typed and scanned from a fake camera feed) creating a food from an unknown barcode, asking about new ingredients in a recipe, and the Mise score on search results and scanned products, on desktop and mobile.
 - **Accessibility:** axe checks every main page for WCAG 2.1 AA in both themes.
 - **Performance:** on a production build, Today's Largest Contentful Paint is about 0.35 s on desktop and 0.56 s on a throttled phone, with no layout shift. Food search has a p95 of about 105 ms against the hosted database.
 
@@ -198,5 +198,6 @@ CI runs type checks, lint, formatting, unit tests with coverage, the em dash che
 
 - Weekly meal planning with a shopping list
 - Logging from a photo of a plate
+- More restaurant chains (USDA covers about 20; menus from chains such as Chipotle and Starbucks need a licensed nutrition source)
 - Recipe import from a URL
 - Sharing recipes with friends

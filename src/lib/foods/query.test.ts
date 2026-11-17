@@ -45,6 +45,7 @@ describe("planQuery", () => {
       text: "chicken breast",
       corrected: "chicken breast",
       lead: ["chicken"],
+      terms: ["chicken", "breast"],
     });
     expect(planQuery("brocolli", VOCAB)?.corrected).toBe("broccoli");
   });
@@ -69,6 +70,20 @@ describe("planQuery", () => {
     expect(planQuery("pb", VOCAB)?.tsquery).toBe(
       "(pb:* | (peanut:* & butter:*))",
     );
+  });
+});
+
+describe("chain names", () => {
+  it("maps how people say a chain to how USDA spells it", () => {
+    expect(planQuery("maccas", VOCAB)?.terms).toEqual(["maccas", "mcdonald"]);
+    expect(planQuery("bk fries", VOCAB)?.terms).toEqual([
+      "bk",
+      "burger",
+      "king",
+      "fries",
+      "french",
+      "fried",
+    ]);
   });
 });
 

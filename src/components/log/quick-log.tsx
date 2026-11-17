@@ -52,6 +52,7 @@ import { SlotPicker } from "./slot-picker";
 const SOURCE_LABEL: Record<FoodHit["source"], string> = {
   usda_foundation: "USDA",
   usda_sr_legacy: "USDA",
+  usda_survey: "USDA",
   usda_branded: "USDA",
   off: "OFF",
   custom: "Custom",
@@ -85,8 +86,15 @@ function FoodRow({ hit }: { hit: FoodHit }) {
         </Badge>
         <ScoreBadge score={hit.score} className="ml-auto" />
       </div>
-      {hit.fullName ? (
-        <span className="truncate text-xs text-ink-muted" title={hit.fullName}>
+      {hit.brand || hit.fullName ? (
+        <span
+          className="truncate text-xs text-ink-muted"
+          title={hit.fullName ?? hit.brand ?? undefined}
+        >
+          {hit.brand ? (
+            <span className="font-medium text-ink">{hit.brand}</span>
+          ) : null}
+          {hit.brand && hit.fullName ? " · " : ""}
           {hit.fullName}
         </span>
       ) : null}

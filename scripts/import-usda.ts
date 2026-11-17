@@ -1,8 +1,8 @@
-// Imports USDA FoodData Central Foundation and SR Legacy foods, their
-// nutrients (per 100 g) and portions. Downloads the CSV zips on first run.
+// Imports USDA FoodData Central Foundation, SR Legacy and FNDDS survey
+// foods, their nutrients (per 100 g) and portions. Downloads the CSV zips on first run.
 // Safe to re-run: foods are upserted by (source, source_id).
 //
-// Usage: pnpm import:usda
+// Usage: pnpm import:usda [usda_foundation|usda_sr_legacy|usda_survey]
 
 import { execFileSync } from "node:child_process";
 import { createReadStream, existsSync, mkdirSync } from "node:fs";
@@ -10,7 +10,7 @@ import { join } from "node:path";
 
 import { parse } from "csv-parse";
 
-import { commonName } from "../src/lib/foods/names";
+import { everydayFood } from "../src/lib/foods/names";
 import { IMPORT_FALLBACKS, NUTRIENTS } from "../src/lib/nutrition/catalog";
 
 import { chunk, scriptSql } from "./lib/db";
@@ -18,9 +18,11 @@ import { fdcUnit, portionLabel, resolveNutrients } from "./lib/fdc";
 import { seedNutrients } from "./lib/nutrients";
 
 type Dataset = {
-  source: "usda_foundation" | "usda_sr_legacy";
+  source: "usda_foundation" | "usda_sr_legacy" | "usda_survey";
   folder: string;
   dataType: string;
+  /** food_nutrient.csv uses nutrient numbers, not ids. */
+  numberedNutrients?: boolean;
 };
 
 // FDC's 2026-10-29 Foundation release shipped without food.csv,
@@ -35,6 +37,14 @@ const DATASETS: Dataset[] = [
     source: "usda_sr_legacy",
     folder: "FoodData_Central_sr_legacy_food_csv_2018-04",
     dataType: "sr_legacy_food",
+  },
+  // FNDDS: foods as people report eating them, including mixed dishes,
+  // fast food and restaurant meals.
+  {
+    source: "usda_survey",
+    folder: "FoodData_Central_survey_food_csv_2024-10-31",
+    dataType: "survey_fndds_food",
+    numberedNutrients: true,
   },
 ];
 
@@ -98,10 +108,13 @@ async function confirmNutrientIds(dir: string): Promise<void> {
   }
 }
 
-/** The everyday name, or null when it is the same as the USDA one. */
-function plainName(name: string, source: string): string | null {
-  const plain = commonName(name, source);
-  return plain === name ? null : plain;
+/** The everyday name (null when it is the USDA one) and restaurant brand. */
+function plainName(name: string, source: string) {
+  const plain = everydayFood(name, source);
+  return {
+    common_name: plain.name === name ? null : plain.name,
+    brand: plain.brand,
+  };
 }
 
 async function importDataset(sql: ReturnType<typeof scriptSql>, ds: Dataset) {
@@ -121,12 +134,13 @@ async function importDataset(sql: ReturnType<typeof scriptSql>, ds: Dataset) {
       source: ds.source,
       source_id: sourceId,
       name,
-      common_name: plainName(name, ds.source),
+      ...plainName(name, ds.source),
     }));
     const inserted = await sql<{ id: number; source_id: string }[]>`
       insert into foods ${sql(rows)}
       on conflict (source, source_id) do update
-        set name = excluded.name, common_name = excluded.common_name
+        set name = excluded.name, common_name = excluded.common_name,
+            brand = excluded.brand
       returning id, source_id
     `;
     for (const r of inserted) foodIds.set(r.source_id, Number(r.id));
@@ -139,10 +153,20 @@ async function importDataset(sql: ReturnType<typeof scriptSql>, ds: Dataset) {
     ...wanted,
     ...Object.values(IMPORT_FALLBACKS).flat(),
   ]);
+  // FNDDS lists nutrients by their old number (208 for energy) rather than
+  // id (1008); nutrient.csv maps one to the other.
+  const byNumber = new Map<number, number>();
+  for await (const row of readCsv(join(dir, "nutrient.csv"))) {
+    const nbr = Number(row.nutrient_nbr);
+    if (Number.isInteger(nbr) && nbr > 0) byNumber.set(nbr, Number(row.id));
+  }
   const raw = new Map<string, Map<number, number>>();
   for await (const row of readCsv(join(dir, "food_nutrient.csv"))) {
     const fdcId = row.fdc_id ?? "";
-    const nutrientId = Number(row.nutrient_id);
+    const listed = Number(row.nutrient_id);
+    const nutrientId = ds.numberedNutrients
+      ? (byNumber.get(listed) ?? listed)
+      : listed;
     if (!foodIds.has(fdcId) || !readable.has(nutrientId) || row.amount === "") {
       continue;
     }
@@ -209,7 +233,11 @@ async function main() {
   const sql = scriptSql();
   try {
     console.log(`Seeded ${await seedNutrients(sql)} nutrients`);
-    for (const ds of DATASETS) await importDataset(sql, ds);
+    // `pnpm import:usda usda_survey` imports one dataset; default is all.
+    const only = process.argv[2];
+    for (const ds of DATASETS) {
+      if (!only || ds.source === only) await importDataset(sql, ds);
+    }
     await sql`analyze foods`;
     await sql`analyze food_nutrients`;
     console.log("Done.");

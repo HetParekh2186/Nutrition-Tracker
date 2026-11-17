@@ -64,7 +64,9 @@ export function portionLabel(row: {
   const qty = formatQuantity(row.amount);
   const unit =
     row.unitName && row.unitName !== "undetermined" ? row.unitName : "";
-  const detail = (row.modifier || row.portionDescription || "").trim();
+  // FNDDS puts a numeric code in modifier; only words describe a portion.
+  const modifier = /^\d+$/.test(row.modifier.trim()) ? "" : row.modifier;
+  const detail = (modifier || row.portionDescription || "").trim();
   const parts = [qty, unit, detail].filter(Boolean);
   // "Quantity not specified" style descriptions read better on their own.
   if (!qty && detail) return detail;

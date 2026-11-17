@@ -52,6 +52,17 @@ describe("resolveNutrients", () => {
 });
 
 describe("portionLabel", () => {
+  it("ignores the numeric modifier codes FNDDS uses", () => {
+    expect(
+      portionLabel({
+        amount: "",
+        unitName: "undetermined",
+        modifier: "10205",
+        portionDescription: "1 sandwich",
+      }),
+    ).toBe("1 sandwich");
+  });
+
   it("builds SR Legacy labels from the modifier", () => {
     expect(
       portionLabel({
